@@ -1,0 +1,600 @@
+{% extends "base.html" %}
+{% block title %}Outreach Autopilot — Turn Clothing Stores Into Clients On Autopilot{% endblock %}
+
+{% block extra_css %}
+<style>
+    .hero {
+        padding: 120px 0 80px;
+        text-align: center;
+    }
+    .hero-badge {
+        display: inline-block;
+        background: rgba(245, 158, 11, 0.1);
+        border: 1px solid rgba(245, 158, 11, 0.3);
+        color: var(--accent);
+        padding: 6px 16px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 24px;
+    }
+    .hero h1 {
+        font-size: clamp(36px, 5vw, 64px);
+        font-weight: 800;
+        line-height: 1.1;
+        margin-bottom: 24px;
+        letter-spacing: -1px;
+    }
+    .hero h1 .highlight {
+        background: linear-gradient(135deg, var(--accent), #f97316);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    .hero p {
+        font-size: 20px;
+        color: var(--text-muted);
+        max-width: 600px;
+        margin: 0 auto 40px;
+    }
+    .hero-buttons { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+
+    /* Pipeline visual */
+    .pipeline-section {
+        padding: 80px 0;
+    }
+    .pipeline-section h2 {
+        text-align: center;
+        font-size: 36px;
+        margin-bottom: 16px;
+    }
+    .pipeline-section .subtitle {
+        text-align: center;
+        color: var(--text-muted);
+        margin-bottom: 60px;
+        font-size: 18px;
+    }
+    .pipeline-steps {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 24px;
+    }
+    .step {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 32px;
+        position: relative;
+        transition: border-color 0.3s;
+    }
+    .step:hover { border-color: var(--accent); }
+    .step-number {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: rgba(245, 158, 11, 0.15);
+        color: var(--accent);
+        font-weight: 700;
+        font-size: 14px;
+        margin-bottom: 16px;
+    }
+    .step h3 { font-size: 18px; margin-bottom: 8px; }
+    .step p { color: var(--text-muted); font-size: 14px; line-height: 1.6; }
+    .step .tech { color: var(--accent); font-size: 12px; margin-top: 12px; font-weight: 600; }
+    .step .auto-badge {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        font-size: 11px;
+        background: rgba(34, 197, 94, 0.15);
+        color: var(--success);
+        padding: 3px 10px;
+        border-radius: 12px;
+        font-weight: 600;
+    }
+
+    /* Sample output showcase */
+    .showcase {
+        padding: 80px 0;
+    }
+    .showcase h2 {
+        text-align: center;
+        font-size: 36px;
+        margin-bottom: 60px;
+    }
+    .showcase-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+        gap: 32px;
+    }
+    .showcase-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        overflow: hidden;
+    }
+    .showcase-card .preview {
+        background: var(--surface-2);
+        padding: 24px;
+        display: flex;
+        gap: 16px;
+        align-items: center;
+        min-height: 200px;
+    }
+    .showcase-card .preview .postcard-mock {
+        background: #1a1a1a;
+        border-radius: 8px;
+        padding: 20px;
+        flex: 1;
+        min-height: 140px;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+    }
+    .showcase-card .preview .postcard-mock h4 {
+        font-size: 13px;
+        color: #fff;
+        margin-bottom: 4px;
+    }
+    .showcase-card .preview .postcard-mock p {
+        font-size: 11px;
+        color: #888;
+    }
+    .showcase-card .preview .qr-mock {
+        width: 80px;
+        height: 80px;
+        background: #fff;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        color: #333;
+        font-weight: 600;
+    }
+    .showcase-card .details {
+        padding: 24px;
+    }
+    .showcase-card .details h3 { font-size: 18px; margin-bottom: 4px; }
+    .showcase-card .details .address { color: var(--text-muted); font-size: 13px; margin-bottom: 12px; }
+    .showcase-card .details .stats {
+        display: flex;
+        gap: 20px;
+    }
+    .showcase-card .details .stat {
+        font-size: 13px;
+    }
+    .showcase-card .details .stat strong { color: var(--accent); }
+
+    /* Specs */
+    .specs {
+        padding: 80px 0;
+    }
+    .specs h2 {
+        text-align: center;
+        font-size: 36px;
+        margin-bottom: 60px;
+    }
+    .specs-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 24px;
+    }
+    .spec-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 28px;
+        text-align: center;
+    }
+    .spec-card .number {
+        font-size: 42px;
+        font-weight: 800;
+        color: var(--accent);
+        margin-bottom: 8px;
+    }
+    .spec-card .label {
+        font-size: 14px;
+        color: var(--text-muted);
+    }
+
+    /* Try-on explainer */
+    .tryon-section {
+        padding: 80px 0;
+    }
+    .tryon-section h2 {
+        text-align: center;
+        font-size: 36px;
+        margin-bottom: 16px;
+    }
+    .tryon-section .subtitle {
+        text-align: center;
+        color: var(--text-muted);
+        margin-bottom: 60px;
+        font-size: 18px;
+    }
+    .tryon-flow {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 24px;
+        flex-wrap: wrap;
+        margin-bottom: 40px;
+    }
+    .tryon-box {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 24px 32px;
+        text-align: center;
+        min-width: 180px;
+    }
+    .tryon-box .icon { font-size: 32px; margin-bottom: 8px; }
+    .tryon-box h4 { font-size: 14px; margin-bottom: 4px; }
+    .tryon-box p { font-size: 12px; color: var(--text-muted); }
+    .tryon-arrow { font-size: 24px; color: var(--accent); }
+
+    /* Pricing */
+    .pricing {
+        padding: 80px 0;
+    }
+    .pricing h2 {
+        text-align: center;
+        font-size: 36px;
+        margin-bottom: 60px;
+    }
+    .pricing-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 24px;
+    }
+    .price-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 36px;
+    }
+    .price-card.featured {
+        border-color: var(--accent);
+        position: relative;
+    }
+    .price-card.featured::before {
+        content: 'MOST POPULAR';
+        position: absolute;
+        top: -12px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: var(--accent);
+        color: #000;
+        padding: 4px 16px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 700;
+    }
+    .price-card h3 { font-size: 20px; margin-bottom: 8px; }
+    .price-card .price { font-size: 42px; font-weight: 800; margin-bottom: 4px; }
+    .price-card .price span { font-size: 16px; color: var(--text-muted); font-weight: 400; }
+    .price-card .desc { color: var(--text-muted); font-size: 14px; margin-bottom: 24px; }
+    .price-card ul { list-style: none; margin-bottom: 32px; }
+    .price-card li {
+        padding: 8px 0;
+        font-size: 14px;
+        color: var(--text-muted);
+        border-bottom: 1px solid var(--border);
+    }
+    .price-card li::before {
+        content: '\2713';
+        color: var(--success);
+        margin-right: 10px;
+        font-weight: 700;
+    }
+
+    /* CTA */
+    .cta {
+        padding: 100px 0;
+        text-align: center;
+    }
+    .cta h2 {
+        font-size: 42px;
+        margin-bottom: 16px;
+    }
+    .cta p {
+        color: var(--text-muted);
+        font-size: 18px;
+        margin-bottom: 40px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Hero -->
+<section class="hero">
+    <div class="container">
+        <div class="hero-badge">AI-Powered Outreach Agent</div>
+        <h1>
+            Find clothing stores.<br>
+            Make them a <span class="highlight">cinematic reel</span>.<br>
+            Mail it on autopilot.
+        </h1>
+        <p>
+            One command discovers offline clothing stores, puts their clothes on a model,
+            generates a cinematic video, and mails them a postcard with a QR code to watch it.
+        </p>
+        <div class="hero-buttons">
+            <a href="/dashboard" class="btn btn-primary">Launch Dashboard</a>
+            <a href="#how-it-works" class="btn btn-outline">See How It Works</a>
+        </div>
+    </div>
+</section>
+
+<!-- Specs -->
+<section class="specs">
+    <div class="container">
+        <div class="specs-grid">
+            <div class="spec-card">
+                <div class="number">$1.80</div>
+                <div class="label">Cost per lead (API + postage)</div>
+            </div>
+            <div class="spec-card">
+                <div class="number">95%</div>
+                <div class="label">Fully automated</div>
+            </div>
+            <div class="spec-card">
+                <div class="number">90%+</div>
+                <div class="label">Postcard open rate</div>
+            </div>
+            <div class="spec-card">
+                <div class="number">7</div>
+                <div class="label">Pipeline steps, zero manual work</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Pipeline Steps -->
+<section class="pipeline-section" id="how-it-works">
+    <div class="container">
+        <h2>How the Agent Works</h2>
+        <p class="subtitle">7 steps, fully automated, from discovery to doorstep</p>
+
+        <div class="pipeline-steps">
+            <div class="step">
+                <div class="auto-badge">AUTO</div>
+                <div class="step-number">1</div>
+                <h3>Discovery</h3>
+                <p>Searches Google Maps for offline clothing stores in your target city and radius.</p>
+                <div class="tech">Google Places API (free $200/mo credit)</div>
+            </div>
+            <div class="step">
+                <div class="auto-badge">AUTO</div>
+                <div class="step-number">2</div>
+                <h3>Qualification</h3>
+                <p>Scores each store 0-100 based on rating, reviews, website quality, and photo count. Drops low-quality leads.</p>
+                <div class="tech">Custom scoring algorithm</div>
+            </div>
+            <div class="step">
+                <div class="auto-badge">AUTO</div>
+                <div class="step-number">3</div>
+                <h3>Clothing Extraction</h3>
+                <p>Scrapes product images from the store's website. Also pulls photos from their Google listing.</p>
+                <div class="tech">Playwright + BeautifulSoup (free)</div>
+            </div>
+            <div class="step">
+                <div class="auto-badge">AUTO</div>
+                <div class="step-number">4</div>
+                <h3>Best Piece Selection</h3>
+                <p>AI vision analyzes every garment and picks the single piece with the most cinematic potential.</p>
+                <div class="tech">Claude Vision API</div>
+            </div>
+            <div class="step">
+                <div class="auto-badge">AUTO</div>
+                <div class="step-number">5</div>
+                <h3>Model + Cinematic Reel</h3>
+                <p>Virtual try-on puts the garment on a model. Then generates a cinematic 9:16 video reel with movement.</p>
+                <div class="tech">Replicate (IDM-VTON + SVD)</div>
+            </div>
+            <div class="step">
+                <div class="auto-badge">AUTO</div>
+                <div class="step-number">6</div>
+                <h3>Postcard Generation</h3>
+                <p>Creates a 300 DPI print-ready postcard — cinematic frame on front, personalized letter + QR on back.</p>
+                <div class="tech">Pillow + QR code (free)</div>
+            </div>
+            <div class="step">
+                <div class="auto-badge">AUTO</div>
+                <div class="step-number">7</div>
+                <h3>Physical Mailing</h3>
+                <p>Mails the postcard to the store owner by name. They scan the QR, watch their reel, and call you.</p>
+                <div class="tech">Lob API (300 free postcards)</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Virtual Try-On Explainer -->
+<section class="tryon-section">
+    <div class="container">
+        <h2>How the Model Wears the Dress</h2>
+        <p class="subtitle">AI virtual try-on technology — no photoshoot needed</p>
+
+        <div class="tryon-flow">
+            <div class="tryon-box">
+                <div class="icon">&#128087;</div>
+                <h4>Store's Garment</h4>
+                <p>Scraped from their website or Google listing</p>
+            </div>
+            <div class="tryon-arrow">+</div>
+            <div class="tryon-box">
+                <div class="icon">&#129489;</div>
+                <h4>Model Photo</h4>
+                <p>Stock model in a neutral pose</p>
+            </div>
+            <div class="tryon-arrow">&rarr;</div>
+            <div class="tryon-box" style="border-color: var(--accent);">
+                <div class="icon">&#10024;</div>
+                <h4>AI Try-On</h4>
+                <p>IDM-VTON maps garment onto model</p>
+            </div>
+            <div class="tryon-arrow">&rarr;</div>
+            <div class="tryon-box" style="border-color: var(--success);">
+                <div class="icon">&#127916;</div>
+                <h4>Cinematic Reel</h4>
+                <p>Stable Video Diffusion adds motion</p>
+            </div>
+        </div>
+
+        <div class="card" style="max-width: 800px; margin: 0 auto;">
+            <h3 style="margin-bottom: 16px;">Technical details</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; font-size: 14px; color: var(--text-muted);">
+                <div>
+                    <strong style="color: var(--text);">Virtual Try-On (IDM-VTON)</strong><br>
+                    Segments the garment from its background, understands shape/texture/draping,
+                    maps it onto the model matching pose and proportions, re-renders with realistic
+                    lighting and shadows.
+                </div>
+                <div>
+                    <strong style="color: var(--text);">Video Generation (SVD)</strong><br>
+                    Takes the try-on result and generates natural movement — the model walking,
+                    fabric flowing, camera angles shifting. Outputs a 4-second cinematic clip
+                    at 9:16 vertical ratio.
+                </div>
+                <div>
+                    <strong style="color: var(--text);">Model options</strong><br>
+                    4 diverse stock model photos included. Swap in your own model photos
+                    for brand-consistent results. Supports male and female models.
+                </div>
+                <div>
+                    <strong style="color: var(--text);">Cost per reel</strong><br>
+                    ~$0.10 for try-on + ~$0.15 for video generation = $0.25/reel on Replicate.
+                    Free trial covers your first ~50-100 reels.
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Sample Outputs -->
+<section class="showcase">
+    <div class="container">
+        <h2>Sample Outputs</h2>
+        <div class="showcase-grid">
+            <div class="showcase-card">
+                <div class="preview">
+                    <div class="postcard-mock">
+                        <h4>We made this for Bella Moda Boutique</h4>
+                        <p>Your clothes. A cinematic reel. Zero effort from you.</p>
+                    </div>
+                    <div class="qr-mock">QR<br>CODE</div>
+                </div>
+                <div class="details">
+                    <h3>Bella Moda Boutique</h3>
+                    <div class="address">123 Fashion Ave, Los Angeles, CA</div>
+                    <div class="stats">
+                        <div class="stat">Score: <strong>85</strong></div>
+                        <div class="stat">Rating: <strong>4.5</strong></div>
+                        <div class="stat">Reviews: <strong>87</strong></div>
+                    </div>
+                </div>
+            </div>
+            <div class="showcase-card">
+                <div class="preview">
+                    <div class="postcard-mock">
+                        <h4>We made this for Urban Thread Co</h4>
+                        <p>Your clothes. A cinematic reel. Zero effort from you.</p>
+                    </div>
+                    <div class="qr-mock">QR<br>CODE</div>
+                </div>
+                <div class="details">
+                    <h3>Urban Thread Co</h3>
+                    <div class="address">456 Style Street, Los Angeles, CA</div>
+                    <div class="stats">
+                        <div class="stat">Score: <strong>80</strong></div>
+                        <div class="stat">Rating: <strong>4.2</strong></div>
+                        <div class="stat">Reviews: <strong>134</strong></div>
+                    </div>
+                </div>
+            </div>
+            <div class="showcase-card">
+                <div class="preview">
+                    <div class="postcard-mock">
+                        <h4>We made this for The Velvet Hanger</h4>
+                        <p>Your clothes. A cinematic reel. Zero effort from you.</p>
+                    </div>
+                    <div class="qr-mock">QR<br>CODE</div>
+                </div>
+                <div class="details">
+                    <h3>The Velvet Hanger</h3>
+                    <div class="address">789 Rodeo Drive, Beverly Hills, CA</div>
+                    <div class="stats">
+                        <div class="stat">Score: <strong>95</strong></div>
+                        <div class="stat">Rating: <strong>4.8</strong></div>
+                        <div class="stat">Reviews: <strong>212</strong></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Pricing -->
+<section class="pricing" id="pricing">
+    <div class="container">
+        <h2>Pricing</h2>
+        <div class="pricing-grid">
+            <div class="price-card">
+                <h3>Starter</h3>
+                <div class="price">$0<span>/mo</span></div>
+                <div class="desc">Try it yourself — all free tiers</div>
+                <ul>
+                    <li>1 city at a time</li>
+                    <li>10 stores per run</li>
+                    <li>Free API tiers only</li>
+                    <li>CLI access</li>
+                    <li>Sample postcards (test mode)</li>
+                </ul>
+                <a href="/dashboard" class="btn btn-outline" style="width: 100%; justify-content: center;">Get Started Free</a>
+            </div>
+            <div class="price-card featured">
+                <h3>Agency</h3>
+                <div class="price">$497<span>/mo</span></div>
+                <div class="desc">Done-for-you, per city</div>
+                <ul>
+                    <li>Unlimited stores per city</li>
+                    <li>Real postcards mailed</li>
+                    <li>Email follow-up sequences</li>
+                    <li>Dashboard + analytics</li>
+                    <li>QR scan tracking</li>
+                    <li>CRM integration</li>
+                </ul>
+                <a href="#" class="btn btn-primary" style="width: 100%; justify-content: center;">Book a Call</a>
+            </div>
+            <div class="price-card">
+                <h3>White Label</h3>
+                <div class="price">$3,997<span> once</span></div>
+                <div class="desc">Your brand, your clients</div>
+                <ul>
+                    <li>Full source code</li>
+                    <li>Custom branding</li>
+                    <li>Deploy on your infra</li>
+                    <li>Training session included</li>
+                    <li>30 days support</li>
+                </ul>
+                <a href="#" class="btn btn-outline" style="width: 100%; justify-content: center;">Contact Us</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA -->
+<section class="cta">
+    <div class="container">
+        <h2>Ready to land your first client?</h2>
+        <p>Run the agent. Let the postcard do the selling.</p>
+        <a href="/dashboard" class="btn btn-primary">Launch the Dashboard</a>
+    </div>
+</section>
+
+{% endblock %}

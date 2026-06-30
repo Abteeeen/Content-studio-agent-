@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Campaign #{{ campaign_id }} — Outreach Autopilot{% endblock %}
+
+{% block extra_css %}
+<style>
+    .page-header {
+        padding: 40px 0 24px;
+    }
+    .page-header h1 { font-size: 28px; margin-bottom: 8px; }
+    .page-header .back { color: var(--text-muted); font-size: 14px; }
+
+    .stores-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+        gap: 20px;
+        padding-bottom: 40px;
+    }
+    .store-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 24px;
+    }
+    .store-card h3 { font-size: 17px; margin-bottom: 4px; }
+    .store-card .address { color: var(--text-muted); font-size: 13px; margin-bottom: 12px; }
+    .store-card .meta {
+        display: flex;
+        gap: 16px;
+        font-size: 13px;
+        color: var(--text-muted);
+        margin-bottom: 12px;
+    }
+    .store-card .meta strong { color: var(--text); }
+    .store-card .status-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <a href="/dashboard" class="back">&larr; Back to Dashboard</a>
+        <h1>Campaign #{{ campaign_id }}</h1>
+        <p style="color: var(--text-muted);">{{ stores|length }} stores in this campaign</p>
+    </div>
+
+    {% if stores %}
+    <div class="stores-grid">
+        {% for s in stores %}
+        <div class="store-card">
+            <h3>{{ s.name }}</h3>
+            <div class="address">{{ s.address }}</div>
+            <div class="meta">
+                <span>Score: <strong>{{ s.score|round(0) }}</strong></span>
+                <span>Rating: <strong>{{ s.rating }}</strong></span>
+                <span>Reviews: <strong>{{ s.review_count }}</strong></span>
+            </div>
+            {% if s.website %}
+            <div style="font-size: 13px; margin-bottom: 12px;">
+                <a href="{{ s.website }}" target="_blank">{{ s.website }}</a>
+            </div>
+            {% endif %}
+            <div class="status-row">
+                {% if s.status == 'mailed' %}
+                    <span class="badge badge-success">Mailed</span>
+                {% elif s.status == 'reel_rendered' %}
+                    <span class="badge badge-warning">Reel Ready</span>
+                {% elif s.status == 'qualified' %}
+                    <span class="badge badge-warning">Qualified</span>
+                {% else %}
+                    <span class="badge badge-danger">{{ s.status }}</span>
+                {% endif %}
+                {% if s.phone %}
+                <span style="font-size: 13px; color: var(--text-muted);">{{ s.phone }}</span>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="card" style="text-align: center; padding: 60px;">
+        <p style="color: var(--text-muted);">No stores processed yet.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
