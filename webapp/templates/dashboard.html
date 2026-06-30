@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Outreach Autopilot{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard-header {
+        padding: 40px 0 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .dashboard-header h1 { font-size: 28px; }
+
+    .stats-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-bottom: 40px;
+    }
+    .stat-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 24px;
+    }
+    .stat-card .value {
+        font-size: 32px;
+        font-weight: 800;
+        color: var(--accent);
+    }
+    .stat-card .label {
+        font-size: 13px;
+        color: var(--text-muted);
+        margin-top: 4px;
+    }
+
+    .section-title {
+        font-size: 20px;
+        margin-bottom: 16px;
+    }
+
+    .campaign-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 40px;
+    }
+    .campaign-table th,
+    .campaign-table td {
+        padding: 12px 16px;
+        text-align: left;
+        border-bottom: 1px solid var(--border);
+        font-size: 14px;
+    }
+    .campaign-table th {
+        color: var(--text-muted);
+        font-weight: 600;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .campaign-table tr:hover td { background: var(--surface); }
+
+    /* New Campaign Modal */
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.7);
+        z-index: 200;
+        align-items: center;
+        justify-content: center;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 36px;
+        width: 100%;
+        max-width: 480px;
+    }
+    .modal h2 { margin-bottom: 24px; font-size: 22px; }
+    .form-group { margin-bottom: 20px; }
+    .form-group label {
+        display: block;
+        font-size: 13px;
+        color: var(--text-muted);
+        margin-bottom: 6px;
+        font-weight: 600;
+    }
+    .form-group input, .form-group select {
+        width: 100%;
+        padding: 10px 14px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--bg);
+        color: var(--text);
+        font-size: 15px;
+    }
+    .form-group input:focus, .form-group select:focus {
+        outline: none;
+        border-color: var(--accent);
+    }
+    .modal-actions { display: flex; gap: 12px; justify-content: flex-end; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="dashboard-header">
+        <h1>Dashboard</h1>
+        <button class="btn btn-primary" onclick="document.getElementById('newCampaignModal').classList.add('active')">
+            + New Campaign
+        </button>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="value">{{ campaigns|length }}</div>
+            <div class="label">Total Campaigns</div>
+        </div>
+        <div class="stat-card">
+            <div class="value">{{ analytics.total_reels }}</div>
+            <div class="label">Reels Generated</div>
+        </div>
+        <div class="stat-card">
+            <div class="value">{{ analytics.total_views }}</div>
+            <div class="label">Total QR Scans</div>
+        </div>
+        <div class="stat-card">
+            <div class="value">{{ analytics.recent_views_7d }}</div>
+            <div class="label">Scans (Last 7 Days)</div>
+        </div>
+    </div>
+
+    <!-- Campaigns Table -->
+    <h2 class="section-title">Campaigns</h2>
+    {% if campaigns %}
+    <table class="campaign-table">
+        <thead>
+            <tr>
+                <th>City</th>
+                <th>Status</th>
+                <th>Stores Found</th>
+                <th>Qualified</th>
+                <th>Reels</th>
+                <th>Mailed</th>
+                <th>Date</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for c in campaigns %}
+            <tr>
+                <td><strong>{{ c.city }}</strong></td>
+                <td>
+                    {% if c.status == 'completed' %}
+                        <span class="badge badge-success">Completed</span>
+                    {% elif c.status == 'running' %}
+                        <span class="badge badge-warning">Running</span>
+                    {% else %}
+                        <span class="badge badge-danger">{{ c.status }}</span>
+                    {% endif %}
+                </td>
+                <td>{{ c.stores_found }}</td>
+                <td>{{ c.stores_qualified }}</td>
+                <td>{{ c.reels_rendered }}</td>
+                <td>{{ c.postcards_mailed }}</td>
+                <td>{{ c.created_at }}</td>
+                <td><a href="/dashboard/campaign/{{ c.id }}">View</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="card" style="text-align: center; padding: 60px;">
+        <p style="color: var(--text-muted); margin-bottom: 20px;">No campaigns yet. Launch your first one.</p>
+        <button class="btn btn-primary" onclick="document.getElementById('newCampaignModal').classList.add('active')">
+            + New Campaign
+        </button>
+    </div>
+    {% endif %}
+</div>
+
+<!-- New Campaign Modal -->
+<div class="modal-overlay" id="newCampaignModal">
+    <div class="modal">
+        <h2>Launch New Campaign</h2>
+        <form id="campaignForm">
+            <div class="form-group">
+                <label>Target City</label>
+                <input type="text" name="city" placeholder="Los Angeles" required>
+            </div>
+            <div class="form-group">
+                <label>Search Radius (meters)</label>
+                <input type="number" name="radius" value="5000" min="1000" max="50000">
+            </div>
+            <div class="form-group">
+                <label>Max Stores</label>
+                <input type="number" name="limit" value="10" min="1" max="100">
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-outline" onclick="document.getElementById('newCampaignModal').classList.remove('active')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Launch Campaign</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('campaignForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const data = {
+        city: form.city.value,
+        radius: parseInt(form.radius.value),
+        limit: parseInt(form.limit.value),
+    };
+
+    const resp = await fetch('/api/campaigns', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    });
+
+    if (resp.ok) {
+        window.location.reload();
+    } else {
+        alert('Failed to launch campaign');
+    }
+});
+</script>
+{% endblock %}

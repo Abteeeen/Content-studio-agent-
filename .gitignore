@@ -9,3 +9,4 @@ samples/sample_output/
 dist/
 build/
 .mypy_cache/
+samples/*.db
