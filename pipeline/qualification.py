@@ -44,10 +44,14 @@ def score_store(store: Store) -> float:
 
 def qualify_stores(stores: list[Store], min_score: float = 50.0) -> list[Store]:
     """Score all stores and return only qualified ones, sorted by score."""
+    # OSM stores never have ratings/reviews — lower threshold if no store has ratings
+    has_ratings = any(s.rating > 0 for s in stores)
+    effective_min = min_score if has_ratings else 15.0
+
     qualified = []
     for store in stores:
         store.score = score_store(store)
-        if store.score >= min_score:
+        if store.score >= effective_min:
             store.status = StoreStatus.QUALIFIED
             qualified.append(store)
             logger.info("QUALIFIED: %s (score=%.0f)", store.name, store.score)
