@@ -32,14 +32,15 @@ def run_pipeline(
     dry_run: bool = False,
     render_method: str = "replicate",
     mail_service: str = "lob",
+    source: str = "yelp",
 ) -> list[OutreachResult]:
     """Execute the full pipeline: discover → qualify → extract → select → render → postcard → mail."""
     results: list[OutreachResult] = []
 
     # Step 1: Discover
-    logger.info("Step 1/7: Discovering clothing stores in %s...", city)
+    logger.info("Step 1/7: Discovering clothing stores in %s via %s...", city, source)
     lat, lng = geocode_city(city)
-    stores = search_clothing_stores(lat, lng, radius)
+    stores = search_clothing_stores(lat, lng, radius, source=source)
     logger.info("Found %d stores", len(stores))
 
     # Step 2: Qualify
@@ -186,6 +187,8 @@ def main() -> None:
     parser.add_argument("--limit", type=int, default=10, help="Max stores to process")
     parser.add_argument("--dry-run", action="store_true", help="Discover and select only, skip render/mail")
     parser.add_argument("--demo", action="store_true", help="Run with sample data, no API keys needed")
+    parser.add_argument("--source", default="yelp", choices=["yelp", "osm", "google"],
+                        help="Store discovery source (yelp=free/recommended, osm=no-signup, google=needs payment)")
     parser.add_argument("--render-method", default="replicate", choices=["replicate", "runway"])
     parser.add_argument("--mail-service", default="lob", choices=["lob", "stannp"])
     parser.add_argument("--log-level", default="INFO")
@@ -203,6 +206,7 @@ def main() -> None:
             dry_run=args.dry_run,
             render_method=args.render_method,
             mail_service=args.mail_service,
+            source=args.source,
         )
 
     print_summary(results)

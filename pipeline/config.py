@@ -3,7 +3,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY", "")
+GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY", "")  # optional
+YELP_API_KEY = os.getenv("YELP_API_KEY", "")               # free, recommended
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 REPLICATE_API_TOKEN = os.getenv("REPLICATE_API_TOKEN", "")
 LOB_API_KEY = os.getenv("LOB_API_KEY", "")
@@ -27,8 +28,8 @@ REEL_HEIGHT = 1920
 def validate_keys() -> list[str]:
     """Return list of missing required API keys."""
     missing = []
-    if not GOOGLE_MAPS_API_KEY:
-        missing.append("GOOGLE_MAPS_API_KEY")
+    if not YELP_API_KEY and not GOOGLE_MAPS_API_KEY:
+        missing.append("YELP_API_KEY (or GOOGLE_MAPS_API_KEY)")
     if not GROQ_API_KEY:
         missing.append("GROQ_API_KEY")
     if not REPLICATE_API_TOKEN:
