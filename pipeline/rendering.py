@@ -243,7 +243,7 @@ def _render_segmind(store: Store, garment: Garment) -> ReelOutput:
 
     store_dir = os.path.join(OUTPUT_DIR, _slugify(store.name))
     os.makedirs(store_dir, exist_ok=True)
-    headers = {"x-api-key": SEGMIND_API_KEY, "Content-Type": "application/json", "Accept": "application/json"}
+    headers = {"x-api-key": SEGMIND_API_KEY, "Content-Type": "application/json"}
 
     tryon_path = garment.image_path
     video_path = ""
@@ -295,41 +295,8 @@ def _render_segmind(store: Store, garment: Garment) -> ReelOutput:
     except Exception as e:
         logger.error("Segmind try-on failed for %s: %s — using garment image", store.name, e)
 
-    # Step 2: Animate to video
-    logger.info("Generating Segmind video reel for %s...", store.name)
-    try:
-        with open(tryon_path, "rb") as f:
-            img_b64 = _bytes_to_base64(f.read())
-
-        resp = requests.post(
-            SEGMIND_VIDEO_URL,
-            headers=headers,
-            json={
-                "image": img_b64,
-                "steps": 25,
-                "fps": 6,
-                "motion_bucket_id": 127,
-            },
-            timeout=180,
-        )
-        resp.raise_for_status()
-
-        content_type = resp.headers.get("content-type", "")
-        if content_type.startswith("video"):
-            video_path = os.path.join(store_dir, "cinematic_reel.mp4")
-            with open(video_path, "wb") as f:
-                f.write(resp.content)
-            logger.info("Segmind reel rendered: %s", video_path)
-        elif "json" in content_type:
-            result = resp.json()
-            vid_url = result.get("video", result.get("output", ""))
-            if vid_url and vid_url.startswith("http"):
-                video_path = os.path.join(store_dir, "cinematic_reel.mp4")
-                _download(vid_url, video_path)
-                logger.info("Segmind reel rendered: %s", video_path)
-
-    except Exception as e:
-        logger.error("Segmind video failed for %s: %s", store.name, e)
+    # Segmind does not offer video generation — try-on image is used on postcard directly
+    logger.info("Segmind: using try-on image for postcard (no video generation available)")
 
     store.status = StoreStatus.REEL_RENDERED
     return ReelOutput(
