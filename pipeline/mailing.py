@@ -15,7 +15,10 @@ import os
 
 import requests
 
-from pipeline.config import LOB_API_KEY, STANNP_API_KEY
+from pipeline.config import (
+    LOB_API_KEY, STANNP_API_KEY,
+    AGENCY_NAME, AGENCY_ADDRESS_LINE1, AGENCY_CITY, AGENCY_STATE, AGENCY_ZIP,
+)
 from pipeline.models import PostcardOutput, Store, StoreStatus
 
 logger = logging.getLogger(__name__)
@@ -47,6 +50,13 @@ def _mail_via_lob(store: Store, postcard: PostcardOutput) -> str:
     if not LOB_API_KEY:
         logger.warning("LOB_API_KEY not set — skipping mail for %s", store.name)
         return "SKIPPED_NO_KEY"
+
+    if not AGENCY_NAME or not AGENCY_ADDRESS_LINE1 or not AGENCY_ZIP:
+        logger.error(
+            "Sender address not configured. Add AGENCY_NAME, AGENCY_ADDRESS_LINE1, "
+            "AGENCY_CITY, AGENCY_STATE, AGENCY_ZIP to your .env"
+        )
+        return "SKIPPED_NO_SENDER"
 
     address_parts = _parse_address(store.address)
 
@@ -97,11 +107,11 @@ def _mail_via_lob(store: Store, postcard: PostcardOutput) -> str:
                 "to[address_state]": state,
                 "to[address_zip]": zipcode,
                 "to[address_country]": "US",
-                "from[name]": os.getenv("AGENCY_NAME", "Your Agency Name"),
-                "from[address_line1]": "123 Agency Street",
-                "from[address_city]": "Los Angeles",
-                "from[address_state]": "CA",
-                "from[address_zip]": "90001",
+                "from[name]": AGENCY_NAME,
+                "from[address_line1]": AGENCY_ADDRESS_LINE1,
+                "from[address_city]": AGENCY_CITY,
+                "from[address_state]": AGENCY_STATE,
+                "from[address_zip]": AGENCY_ZIP,
                 "from[address_country]": "US",
                 "size": "4x6",
                 "use_type": "marketing",

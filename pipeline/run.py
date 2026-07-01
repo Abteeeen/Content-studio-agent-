@@ -21,6 +21,7 @@ from pipeline.postcard import generate_postcard
 from pipeline.mailing import mail_postcard
 from pipeline.models import OutreachResult, StoreStatus
 from pipeline.utils import setup_logging, save_result, print_summary
+from pipeline.config import REEL_BASE_URL
 
 logger = logging.getLogger(__name__)
 
@@ -82,9 +83,22 @@ def run_pipeline(
             logger.info("Step 5/7: Rendering cinematic reel...")
             result.reel = render_reel(store, result.selected_garment, method=render_method)
 
+            if not result.reel.video_path and not result.reel.video_url:
+                logger.warning(
+                    "No video generated for %s — skipping postcard and mail. "
+                    "Fix the render step first before mailing.", store.name
+                )
+                result.error = "Video generation failed — postcard not sent"
+                results.append(result)
+                save_result(result)
+                continue
+
             # Step 6: Generate postcard
             logger.info("Step 6/7: Generating postcard...")
-            reel_url = result.reel.video_url or f"https://youragency.com/reel/{store.place_id}"
+            reel_url = result.reel.video_url or (
+                f"{REEL_BASE_URL.rstrip('/')}/reel/{store.place_id}" if REEL_BASE_URL
+                else f"https://youragency.com/reel/{store.place_id}"
+            )
             result.postcard = generate_postcard(store, result.reel, reel_url)
 
             # Step 7: Mail it

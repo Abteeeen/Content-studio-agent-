@@ -13,6 +13,16 @@ FAL_API_KEY = os.getenv("FAL_API_KEY", "")
 SEGMIND_API_KEY = os.getenv("SEGMIND_API_KEY", "")
 WAVESPEED_API_KEY = os.getenv("WAVESPEED_API_KEY", "")
 
+# Sender address for physical postcards — add these to your .env
+AGENCY_NAME = os.getenv("AGENCY_NAME", "")
+AGENCY_ADDRESS_LINE1 = os.getenv("AGENCY_ADDRESS_LINE1", "")
+AGENCY_CITY = os.getenv("AGENCY_CITY", "")
+AGENCY_STATE = os.getenv("AGENCY_STATE", "")
+AGENCY_ZIP = os.getenv("AGENCY_ZIP", "")
+
+# Public base URL where your video reels are hosted (used in postcard QR code)
+REEL_BASE_URL = os.getenv("REEL_BASE_URL", "")
+
 OUTPUT_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "samples", "sample_output")
 
 PLACES_SEARCH_RADIUS = 5000
