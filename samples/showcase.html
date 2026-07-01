@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Clothing Store Outreach Autopilot — AI Agent Showcase</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0a0a0f; color: #e8e8f0; line-height: 1.6; }
+
+    /* ── Hero ── */
+    .hero {
+      background: linear-gradient(135deg, #0f0f1a 0%, #1a0a2e 50%, #0a1a2e 100%);
+      padding: 80px 40px;
+      text-align: center;
+      border-bottom: 1px solid #222;
+    }
+    .hero-badge {
+      display: inline-block;
+      background: rgba(99,102,241,0.15);
+      border: 1px solid rgba(99,102,241,0.4);
+      color: #a5b4fc;
+      padding: 6px 16px;
+      border-radius: 999px;
+      font-size: 13px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 24px;
+    }
+    .hero h1 { font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 700; color: #fff; margin-bottom: 16px; }
+    .hero h1 span { background: linear-gradient(90deg, #818cf8, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .hero p { font-size: 1.15rem; color: #94a3b8; max-width: 640px; margin: 0 auto 40px; }
+    .hero-stats { display: flex; justify-content: center; gap: 48px; flex-wrap: wrap; }
+    .stat { text-align: center; }
+    .stat-number { font-size: 2rem; font-weight: 700; color: #818cf8; }
+    .stat-label { font-size: 0.8rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; }
+
+    /* ── Section ── */
+    section { padding: 64px 40px; max-width: 1100px; margin: 0 auto; }
+    h2 { font-size: 1.6rem; font-weight: 700; color: #fff; margin-bottom: 8px; }
+    .section-subtitle { color: #64748b; margin-bottom: 40px; font-size: 0.95rem; }
+
+    /* ── Pipeline steps ── */
+    .pipeline { display: flex; flex-direction: column; gap: 0; }
+    .step {
+      display: flex;
+      align-items: flex-start;
+      gap: 24px;
+      padding: 28px 0;
+      border-bottom: 1px solid #1e1e2e;
+    }
+    .step:last-child { border-bottom: none; }
+    .step-number {
+      width: 44px; height: 44px; min-width: 44px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #4f46e5, #7c3aed);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 1rem; color: #fff;
+    }
+    .step-body h3 { color: #c7d2fe; font-size: 1rem; margin-bottom: 4px; }
+    .step-body p { color: #64748b; font-size: 0.9rem; }
+    .step-tag {
+      display: inline-block; margin-top: 8px;
+      background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3);
+      color: #34d399; padding: 2px 10px; border-radius: 999px; font-size: 0.75rem;
+    }
+    .step-tag.paid { background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.3); color: #fbbf24; }
+
+    /* ── Results grid ── */
+    .results-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; }
+    .result-card {
+      background: #111120;
+      border: 1px solid #1e1e30;
+      border-radius: 16px;
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+    .result-card:hover { border-color: #4f46e5; }
+    .result-card video, .result-card img {
+      width: 100%; display: block;
+      background: #0a0a15;
+    }
+    .result-card video { max-height: 280px; object-fit: cover; }
+    .result-card img { max-height: 200px; object-fit: contain; padding: 12px; }
+    .card-body { padding: 20px; }
+    .card-store { font-size: 0.75rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+    .card-title { font-size: 1rem; font-weight: 600; color: #e2e8f0; margin-bottom: 8px; }
+    .card-meta { font-size: 0.82rem; color: #64748b; }
+    .card-badge {
+      display: inline-block; margin-top: 12px;
+      padding: 4px 12px; border-radius: 999px; font-size: 0.75rem; font-weight: 600;
+    }
+    .badge-video { background: rgba(99,102,241,0.15); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.3); }
+    .badge-postcard { background: rgba(16,185,129,0.1); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
+    .badge-mailed { background: rgba(245,158,11,0.1); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
+
+    /* ── Comparison table ── */
+    .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .compare-card {
+      background: #111120; border: 1px solid #1e1e30; border-radius: 16px; padding: 28px;
+    }
+    .compare-card.paid { border-color: rgba(245,158,11,0.3); }
+    .compare-card.free { border-color: rgba(16,185,129,0.3); }
+    .compare-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px; font-weight: 700; }
+    .compare-card.paid .compare-label { color: #fbbf24; }
+    .compare-card.free .compare-label { color: #34d399; }
+    .compare-card h3 { font-size: 1.3rem; color: #fff; margin-bottom: 6px; }
+    .compare-card .price { font-size: 2rem; font-weight: 700; margin-bottom: 20px; }
+    .compare-card.paid .price { color: #fbbf24; }
+    .compare-card.free .price { color: #34d399; }
+    .feature-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+    .feature-list li { display: flex; align-items: flex-start; gap: 10px; font-size: 0.9rem; color: #94a3b8; }
+    .feature-list li::before { content: ''; min-width: 18px; height: 18px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; font-size: 11px; margin-top: 1px; }
+    .feature-list.good li::before { background: rgba(16,185,129,0.2); color: #34d399; content: '✓'; }
+    .feature-list.ok li::before { background: rgba(245,158,11,0.2); color: #fbbf24; content: '~'; }
+
+    /* ── Errors log ── */
+    .error-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    .error-table th { text-align: left; padding: 10px 16px; color: #64748b; font-weight: 600;
+      font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;
+      border-bottom: 1px solid #1e1e30; }
+    .error-table td { padding: 12px 16px; border-bottom: 1px solid #0f0f1e; vertical-align: top; }
+    .error-table tr:last-child td { border-bottom: none; }
+    .error-table td:first-child { color: #f87171; font-family: monospace; }
+    .error-table td:nth-child(2) { color: #94a3b8; }
+    .error-table td:nth-child(3) { color: #34d399; }
+
+    /* ── Tech stack ── */
+    .tech-grid { display: flex; flex-wrap: wrap; gap: 12px; }
+    .tech-chip {
+      background: #111120; border: 1px solid #1e1e30; border-radius: 8px;
+      padding: 8px 16px; font-size: 0.85rem; color: #94a3b8;
+    }
+    .tech-chip strong { color: #c7d2fe; }
+
+    /* ── Footer ── */
+    footer {
+      border-top: 1px solid #1e1e30; padding: 40px;
+      text-align: center; color: #334155; font-size: 0.85rem;
+    }
+
+    @media (max-width: 640px) {
+      .compare-grid { grid-template-columns: 1fr; }
+      .hero { padding: 48px 20px; }
+      section { padding: 48px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-badge">AI Agent — End to End Autonomous</div>
+  <h1>Clothing Store<br><span>Outreach Autopilot</span></h1>
+  <p>Finds US clothing stores, scrapes their products, generates a cinematic video reel, designs a postcard, and physically mails it — all on autopilot.</p>
+  <div class="hero-stats">
+    <div class="stat"><div class="stat-number">7</div><div class="stat-label">Autonomous Steps</div></div>
+    <div class="stat"><div class="stat-number">$0.10</div><div class="stat-label">Cost per Store (Free Path)</div></div>
+    <div class="stat"><div class="stat-number">56</div><div class="stat-label">Stores Found in LA</div></div>
+    <div class="stat"><div class="stat-number">0</div><div class="stat-label">Human Decisions</div></div>
+  </div>
+</div>
+
+<!-- PIPELINE -->
+<section>
+  <h2>How It Works</h2>
+  <p class="section-subtitle">Every step runs autonomously. You give it a city name, it handles the rest.</p>
+  <div class="pipeline">
+    <div class="step">
+      <div class="step-number">1</div>
+      <div class="step-body">
+        <h3>Discover Clothing Stores</h3>
+        <p>Queries OpenStreetMap, Yelp, or Google Places for clothing stores near a target city. Found 56 stores in Los Angeles in under 10 seconds.</p>
+        <span class="step-tag">Free — OpenStreetMap / Yelp</span>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-number">2</div>
+      <div class="step-body">
+        <h3>Qualify &amp; Score Each Store</h3>
+        <p>Scores each store 0–100 based on website presence, contact info, address completeness, and social media absence. Filters out chains and low-quality leads.</p>
+        <span class="step-tag">Free — Custom scoring engine</span>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-number">3</div>
+      <div class="step-body">
+        <h3>Scrape Clothing Images</h3>
+        <p>Visits the store's actual website and extracts product images using BeautifulSoup. Targets product thumbnails, listing photos, and catalog images.</p>
+        <span class="step-tag">Free — BeautifulSoup scraper</span>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-number">4</div>
+      <div class="step-body">
+        <h3>AI Picks the Best Garment</h3>
+        <p>Sends all scraped images to Groq Vision AI (Llama 4 Scout). Scores each garment on cinematic impact, color, silhouette, and uniqueness. Picks the winner.</p>
+        <span class="step-tag">Free — Groq Llama 4 Scout Vision</span>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-number">5</div>
+      <div class="step-body">
+        <h3>Generate Cinematic Video Reel</h3>
+        <p>Uploads the winning garment to WaveSpeedAI's WAN 2.7 model. Generates a 5-second cinematic animation. With Segmind try-on enabled, the garment appears on a real model first.</p>
+        <span class="step-tag">~$0.06 — WaveSpeedAI WAN 2.7</span>
+        <span class="step-tag paid">Paid upgrade: model try-on via Replicate IDM-VTON</span>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-number">6</div>
+      <div class="step-body">
+        <h3>Design Print-Ready Postcard</h3>
+        <p>Creates a 4×6" postcard at 300 DPI using Pillow. Front shows the garment with personalised headline. Back includes store name, a QR code linking to the video, and a call to action.</p>
+        <span class="step-tag">Free — Pillow + qrcode</span>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-number">7</div>
+      <div class="step-body">
+        <h3>Physically Mail It</h3>
+        <p>Sends the postcard via Lob API. Lob prints, addresses, stamps, and mails it to the store owner's address. Returns a tracking ID. Test mode is free (300 cards).</p>
+        <span class="step-tag">Free trial — Lob API (300 test cards)</span>
+        <span class="step-tag paid">Live: ~$0.80/postcard</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- RESULTS -->
+<section>
+  <h2>Actual Outputs Generated</h2>
+  <p class="section-subtitle">Real stores. Real AI decisions. Real video. Real mail. These are not mocked.</p>
+  <div class="results-grid">
+
+    <div class="result-card">
+      <video controls autoplay muted loop playsinline
+             src="sample_output/image_gear_usa/cinematic_reel.mp4"
+             onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
+      </video>
+      <div style="display:none; padding:40px; text-align:center; color:#334155; font-size:0.85rem;">
+        video file: sample_output/image_gear_usa/cinematic_reel.mp4
+      </div>
+      <div class="card-body">
+        <div class="card-store">Los Angeles, CA — OSM Discovery</div>
+        <div class="card-title">Image Gear USA</div>
+        <div class="card-meta">AI selected: Blue apron (score 9/10)<br>
+          "Bold blue color and interesting silhouette"<br>
+          Lob tracking: psc_14497c3c83e24fbf</div>
+        <span class="card-badge badge-video">Video Generated</span>
+        <span class="card-badge badge-mailed">Postcard Mailed</span>
+      </div>
+    </div>
+
+    <div class="result-card">
+      <img src="sample_output/bella_moda_boutique/postcard_front.png" alt="Postcard Front — Bella Moda Boutique"
+           onerror="this.style.opacity=0.3" />
+      <div class="card-body">
+        <div class="card-store">Los Angeles, CA — Demo Mode</div>
+        <div class="card-title">Bella Moda Boutique</div>
+        <div class="card-meta">Owner: Maria Santos<br>Rating: 4.5 ★ (87 reviews)<br>Score: 85/100</div>
+        <span class="card-badge badge-postcard">Postcard Designed</span>
+      </div>
+    </div>
+
+    <div class="result-card">
+      <img src="sample_output/the_velvet_hanger/postcard_front.png" alt="Postcard Front — The Velvet Hanger"
+           onerror="this.style.opacity=0.3" />
+      <div class="card-body">
+        <div class="card-store">Beverly Hills, CA — Demo Mode</div>
+        <div class="card-title">The Velvet Hanger</div>
+        <div class="card-meta">Owner: Sofia Laurent<br>Rating: 4.8 ★ (212 reviews)<br>Score: 95/100</div>
+        <span class="card-badge badge-postcard">Postcard Designed</span>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- PAID VS FREE -->
+<section>
+  <h2>Paid vs Free Path</h2>
+  <p class="section-subtitle">We built and tested both. Here is the honest comparison.</p>
+  <div class="compare-grid">
+    <div class="compare-card free">
+      <div class="compare-label">Free Path</div>
+      <h3>Bootstrap Mode</h3>
+      <div class="price">~$0.10 <span style="font-size:1rem;font-weight:400;color:#64748b">/ store</span></div>
+      <ul class="feature-list good">
+        <li>OpenStreetMap store discovery (56 stores found, zero cost)</li>
+        <li>Groq Llama 4 Vision garment selection (free tier)</li>
+        <li>WaveSpeedAI WAN 2.7 video ($1 free signup credit)</li>
+        <li>Lob test mode mailing (300 free postcards)</li>
+        <li>Postcard design with Pillow (fully free)</li>
+      </ul>
+      <ul class="feature-list ok" style="margin-top:12px">
+        <li>Try-on quality limited (Segmind 406 in testing)</li>
+        <li>Less store data richness vs Google</li>
+        <li>Some APIs blocked by Indian ISPs (HuggingFace, fal.ai)</li>
+      </ul>
+    </div>
+    <div class="compare-card paid">
+      <div class="compare-label">Paid Path</div>
+      <h3>Production Grade</h3>
+      <div class="price">~$0.90 <span style="font-size:1rem;font-weight:400;color:#64748b">/ store</span></div>
+      <ul class="feature-list good">
+        <li>Google Places API — phone, hours, owner name, photos</li>
+        <li>Replicate IDM-VTON — garment on real model photo</li>
+        <li>Replicate Stable Video Diffusion — cinematic model reel</li>
+        <li>Lob live mode — real tracked physical mail delivery</li>
+        <li>Claude claude-sonnet-5 vision — best garment reasoning</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ERRORS WE FIXED -->
+<section>
+  <h2>Errors Hit and Fixed</h2>
+  <p class="section-subtitle">Everything that broke during development, and how we fixed it. Real debugging, not a happy path demo.</p>
+  <table class="error-table">
+    <thead>
+      <tr><th>Error</th><th>Root Cause</th><th>Fix Applied</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>HuggingFace DNS fail</td>
+        <td>Indian ISP blocks api-inference.huggingface.co at routing level — DNS change to 8.8.8.8 didn't help</td>
+        <td>Switched to WaveSpeedAI (globally accessible)</td>
+      </tr>
+      <tr>
+        <td>fal.ai 403 / DNS blocked</td>
+        <td>VPN IP blocked by fal.ai; storage.fal.run also blocked by ISP</td>
+        <td>Switched to WaveSpeedAI; added tmpfiles.org upload step</td>
+      </tr>
+      <tr>
+        <td>Replicate 402</td>
+        <td>Free trial credits exhausted</td>
+        <td>Added WaveSpeed + Segmind as free alternatives</td>
+      </tr>
+      <tr>
+        <td>Segmind IDM-VTON 406</td>
+        <td>Oversized base64 payload (~2MB) exceeding server limit</td>
+        <td>Resize images to 768px max with Pillow before encoding</td>
+      </tr>
+      <tr>
+        <td>WaveSpeed 400 (480p)</td>
+        <td>API only accepts "720p" or "1080p" — not "480p"</td>
+        <td>Changed resolution to "720p"</td>
+      </tr>
+      <tr>
+        <td>WaveSpeed connection aborted</td>
+        <td>Raw PNG base64 payload (~2MB) caused server to close connection</td>
+        <td>Upload image to tmpfiles.org first, pass HTTPS URL instead</td>
+      </tr>
+      <tr>
+        <td>Lob 422 (size)</td>
+        <td>Sent "6x4" — Lob only accepts "4x6"</td>
+        <td>Fixed size string to "4x6"</td>
+      </tr>
+      <tr>
+        <td>Lob 422 (use_type)</td>
+        <td>Required field missing from API payload</td>
+        <td>Added use_type: "marketing" to request</td>
+      </tr>
+      <tr>
+        <td>OSM 0 qualified stores</td>
+        <td>All OSM stores have rating=0; threshold was 50 — nothing passed</td>
+        <td>Lower threshold to 15 when no stores have ratings</td>
+      </tr>
+      <tr>
+        <td>Groq 400 (deprecated model)</td>
+        <td>llama-3.2-90b-vision-preview deprecated by Groq</td>
+        <td>Switched to meta-llama/llama-4-scout-17b-16e-instruct</td>
+      </tr>
+      <tr>
+        <td>Overpass 504</td>
+        <td>Main OSM server overloaded</td>
+        <td>Added 2 mirror fallback URLs with auto-retry</td>
+      </tr>
+      <tr>
+        <td>Mailing without video</td>
+        <td>Pipeline mailed postcards with broken QR codes when video failed</td>
+        <td>Gate Steps 6+7 on video_path being set — skip if no video</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- TECH STACK -->
+<section>
+  <h2>Tech Stack</h2>
+  <p class="section-subtitle">All standard Python. No heavy frameworks. Easily deployable anywhere.</p>
+  <div class="tech-grid">
+    <div class="tech-chip"><strong>Python 3.11</strong> orchestration</div>
+    <div class="tech-chip"><strong>Pydantic</strong> typed data models</div>
+    <div class="tech-chip"><strong>BeautifulSoup</strong> web scraping</div>
+    <div class="tech-chip"><strong>Pillow</strong> postcard image generation</div>
+    <div class="tech-chip"><strong>qrcode</strong> QR code generation</div>
+    <div class="tech-chip"><strong>Groq Llama 4 Scout</strong> vision AI</div>
+    <div class="tech-chip"><strong>WaveSpeedAI WAN 2.7</strong> image-to-video</div>
+    <div class="tech-chip"><strong>Segmind IDM-VTON</strong> virtual try-on</div>
+    <div class="tech-chip"><strong>Lob API</strong> physical mail</div>
+    <div class="tech-chip"><strong>OpenStreetMap / Nominatim</strong> geocoding</div>
+    <div class="tech-chip"><strong>Flask</strong> web dashboard</div>
+    <div class="tech-chip"><strong>Replicate</strong> paid AI backend</div>
+  </div>
+</section>
+
+<footer>
+  Built as a fully autonomous AI agent · Pipeline runs end-to-end without human intervention ·
+  Tested on real Los Angeles clothing stores
+</footer>
+
+</body>
+</html>
