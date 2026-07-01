@@ -89,7 +89,11 @@ def run_pipeline(
 
             # Step 7: Mail it
             logger.info("Step 7/7: Mailing postcard...")
-            result.mail_tracking_id = mail_postcard(store, result.postcard, service=mail_service)
+            try:
+                result.mail_tracking_id = mail_postcard(store, result.postcard, service=mail_service)
+            except Exception as mail_err:
+                logger.error("Mailing failed for %s (postcard still saved): %s", store.name, mail_err)
+                result.mail_tracking_id = "MAIL_FAILED"
 
         except Exception as e:
             logger.error("Failed processing %s: %s", store.name, e, exc_info=True)

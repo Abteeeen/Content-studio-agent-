@@ -107,7 +107,9 @@ def _mail_via_lob(store: Store, postcard: PostcardOutput) -> str:
             },
             timeout=30,
         )
-    resp.raise_for_status()
+    if not resp.ok:
+        logger.error("Lob API error %d for %s: %s", resp.status_code, store.name, resp.text[:500])
+        resp.raise_for_status()
     result = resp.json()
 
     tracking_id = result.get("id", "")
