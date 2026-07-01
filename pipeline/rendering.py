@@ -544,7 +544,7 @@ def _render_wavespeed(store: Store, garment: Garment) -> ReelOutput:
                 "image": image_input,
                 "prompt": f"cinematic fashion reel, model wearing {garment.description or 'stylish clothing'}, smooth camera movement, professional lighting",
                 "duration": 5,
-                "resolution": "480p",
+                "resolution": "720p",
                 "enable_safety_checker": True,
             },
             timeout=90,
