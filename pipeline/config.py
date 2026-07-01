@@ -10,6 +10,7 @@ REPLICATE_API_TOKEN = os.getenv("REPLICATE_API_TOKEN", "")
 LOB_API_KEY = os.getenv("LOB_API_KEY", "")
 STANNP_API_KEY = os.getenv("STANNP_API_KEY", "")
 FAL_API_KEY = os.getenv("FAL_API_KEY", "")
+SEGMIND_API_KEY = os.getenv("SEGMIND_API_KEY", "")
 
 OUTPUT_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "samples", "sample_output")
 

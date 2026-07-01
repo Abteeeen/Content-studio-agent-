@@ -193,8 +193,9 @@ def main() -> None:
     parser.add_argument("--demo", action="store_true", help="Run with sample data, no API keys needed")
     parser.add_argument("--source", default="yelp", choices=["yelp", "osm", "google"],
                         help="Store discovery source (yelp=free/recommended, osm=no-signup, google=needs payment)")
-    parser.add_argument("--render-method", default="replicate", choices=["replicate", "fal", "free"],
-                        help="Render method (replicate=paid, fal=free $1 credit, free=HuggingFace)")
+    parser.add_argument("--render-method", default="replicate",
+                        choices=["replicate", "fal", "segmind", "free"],
+                        help="Render method: replicate=paid, fal=free credit, segmind=works in India, free=HuggingFace")
     parser.add_argument("--mail-service", default="lob", choices=["lob", "stannp"])
     parser.add_argument("--log-level", default="INFO")
 

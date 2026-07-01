@@ -3,6 +3,7 @@
 Backends:
   --render-method replicate    IDM-VTON + Stable Video Diffusion (needs Replicate credits ~$0.05/run)
   --render-method fal          fal.ai IDM-VTON (free $1 signup credit, ~20 try-ons)
+  --render-method segmind      Segmind virtual try-on (Indian startup, free credits, works in India)
   --render-method free         Hugging Face Inference API (truly free but unreliable)
 """
 
@@ -14,7 +15,7 @@ import time
 
 import requests
 
-from pipeline.config import OUTPUT_DIR, REPLICATE_API_TOKEN, FAL_API_KEY
+from pipeline.config import OUTPUT_DIR, REPLICATE_API_TOKEN, FAL_API_KEY, SEGMIND_API_KEY
 from pipeline.models import Garment, ReelOutput, Store, StoreStatus
 
 logger = logging.getLogger(__name__)
@@ -37,6 +38,8 @@ def render_reel(store: Store, garment: Garment, method: str = "replicate") -> Re
         return _render_replicate(store, garment)
     elif method == "fal":
         return _render_fal(store, garment)
+    elif method == "segmind":
+        return _render_segmind(store, garment)
     elif method == "free":
         return _render_free(store, garment)
     raise ValueError(f"Unknown rendering method: {method}")
@@ -210,6 +213,107 @@ def _render_fal(store: Store, garment: Garment) -> ReelOutput:
 
     except Exception as e:
         logger.error("fal.ai video failed for %s: %s", store.name, e)
+
+    store.status = StoreStatus.REEL_RENDERED
+    return ReelOutput(
+        video_path=video_path,
+        video_url=video_url,
+        thumbnail_path=tryon_path,
+        duration=4.0,
+    )
+
+
+# ─── Segmind rendering (Indian startup — works in India, free credits) ───────
+
+SEGMIND_TRYON_URL = "https://api.segmind.com/v1/idm-vton"
+SEGMIND_VIDEO_URL = "https://api.segmind.com/v1/svd-img2vid"
+
+
+def _render_segmind(store: Store, garment: Garment) -> ReelOutput:
+    """Virtual try-on + video via Segmind API.
+
+    Indian AI startup — accessible from India without VPN.
+    Free credits on signup at segmind.com.
+    Add to .env: SEGMIND_API_KEY=your_key
+    """
+    if not SEGMIND_API_KEY:
+        logger.warning("SEGMIND_API_KEY not set — using garment image for %s", store.name)
+        store.status = StoreStatus.REEL_RENDERED
+        return ReelOutput(thumbnail_path=garment.image_path)
+
+    store_dir = os.path.join(OUTPUT_DIR, _slugify(store.name))
+    os.makedirs(store_dir, exist_ok=True)
+    headers = {"x-api-key": SEGMIND_API_KEY, "Content-Type": "application/json"}
+
+    tryon_path = garment.image_path
+    video_path = ""
+    video_url = ""
+
+    # Step 1: Virtual try-on
+    logger.info("Running Segmind virtual try-on for %s...", store.name)
+    try:
+        with open(garment.image_path, "rb") as f:
+            garment_b64 = _bytes_to_base64(f.read())
+        model_resp = requests.get(MODEL_PHOTOS[0], timeout=15)
+        model_resp.raise_for_status()
+        model_b64 = _bytes_to_base64(model_resp.content)
+
+        resp = requests.post(
+            SEGMIND_TRYON_URL,
+            headers=headers,
+            json={
+                "human_img": model_b64,
+                "garm_img": garment_b64,
+                "garment_des": garment.description or "Fashion garment",
+                "category": garment.category or "upper_body",
+                "crop": False,
+                "seed": 42,
+                "steps": 30,
+            },
+            timeout=120,
+        )
+        resp.raise_for_status()
+
+        if resp.headers.get("content-type", "").startswith("image"):
+            tryon_path = os.path.join(store_dir, "tryon_result.png")
+            with open(tryon_path, "wb") as f:
+                f.write(resp.content)
+            logger.info("Segmind try-on complete: %s", tryon_path)
+        else:
+            result = resp.json()
+            logger.warning("Segmind try-on unexpected response: %s", result)
+
+    except Exception as e:
+        logger.error("Segmind try-on failed for %s: %s — using garment image", store.name, e)
+
+    # Step 2: Animate to video
+    logger.info("Generating Segmind video reel for %s...", store.name)
+    try:
+        with open(tryon_path, "rb") as f:
+            img_b64 = _bytes_to_base64(f.read())
+
+        resp = requests.post(
+            SEGMIND_VIDEO_URL,
+            headers=headers,
+            json={
+                "image": img_b64,
+                "steps": 25,
+                "fps": 6,
+                "motion_bucket_id": 127,
+                "output_format": "mp4",
+            },
+            timeout=180,
+        )
+        resp.raise_for_status()
+
+        if resp.headers.get("content-type", "").startswith("video"):
+            video_path = os.path.join(store_dir, "cinematic_reel.mp4")
+            with open(video_path, "wb") as f:
+                f.write(resp.content)
+            logger.info("Segmind reel rendered: %s", video_path)
+
+    except Exception as e:
+        logger.error("Segmind video failed for %s: %s", store.name, e)
 
     store.status = StoreStatus.REEL_RENDERED
     return ReelOutput(
