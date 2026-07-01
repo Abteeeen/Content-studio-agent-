@@ -143,15 +143,15 @@ def _search_yelp(lat: float, lng: float, radius: int) -> list[Store]:
 
 # ─── OpenStreetMap / Overpass (100% FREE, no signup) ─────────────────────────
 
-OVERPASS_URL = "https://overpass-api.de/api/interpreter"
+OVERPASS_MIRRORS = [
+    "https://overpass-api.de/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter",
+    "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+]
 
 
 def _search_osm(lat: float, lng: float, radius: int) -> list[Store]:
-    """Search via OpenStreetMap Overpass API — zero cost, zero signup.
-
-    Finds all nodes/ways tagged shop=clothes or shop=fashion within the radius.
-    Data quality varies by city — works best in US, UK, EU major cities.
-    """
+    """Search via OpenStreetMap Overpass API — zero cost, zero signup."""
     query = f"""
     [out:json][timeout:25];
     (
@@ -161,14 +161,23 @@ def _search_osm(lat: float, lng: float, radius: int) -> list[Store]:
     out center tags;
     """
 
-    resp = requests.post(
-        OVERPASS_URL,
-        data={"data": query},
-        headers={"User-Agent": "OutreachAutopilot/1.0"},
-        timeout=30,
-    )
-    resp.raise_for_status()
-    data = resp.json()
+    last_err = None
+    for mirror in OVERPASS_MIRRORS:
+        try:
+            resp = requests.post(
+                mirror,
+                data={"data": query},
+                headers={"User-Agent": "OutreachAutopilot/1.0"},
+                timeout=35,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            break
+        except Exception as e:
+            logger.warning("Overpass mirror %s failed: %s — trying next", mirror, e)
+            last_err = e
+    else:
+        raise RuntimeError(f"All Overpass mirrors failed. Last error: {last_err}")
 
     stores: list[Store] = []
     for i, element in enumerate(data.get("elements", [])):
