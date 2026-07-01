@@ -19,7 +19,7 @@ from pipeline.models import Garment, Store, StoreStatus
 logger = logging.getLogger(__name__)
 
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
-GROQ_VISION_MODEL = "llama-3.2-90b-vision-preview"
+GROQ_VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
 
 SELECTION_PROMPT = """You are a fashion content strategist for a video production agency.
 
@@ -108,6 +108,8 @@ def select_best_garment(store: Store, garments: list[Garment]) -> Garment | None
             logger.info("Selected garment %d for %s: %s", winner_idx + 1, store.name, winner.description)
             return winner
 
+    except requests.HTTPError as e:
+        logger.error("Groq selection failed for %s: %s — body: %s", store.name, e, e.response.text[:300])
     except Exception as e:
         logger.error("Groq selection failed for %s: %s — using first garment", store.name, e)
 
