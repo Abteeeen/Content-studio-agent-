@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY", "")
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 REPLICATE_API_TOKEN = os.getenv("REPLICATE_API_TOKEN", "")
 LOB_API_KEY = os.getenv("LOB_API_KEY", "")
 STANNP_API_KEY = os.getenv("STANNP_API_KEY", "")
@@ -22,3 +22,15 @@ POSTCARD_BLEED = 38    # 0.125" bleed
 
 REEL_WIDTH = 1080
 REEL_HEIGHT = 1920
+
+
+def validate_keys() -> list[str]:
+    """Return list of missing required API keys."""
+    missing = []
+    if not GOOGLE_MAPS_API_KEY:
+        missing.append("GOOGLE_MAPS_API_KEY")
+    if not GROQ_API_KEY:
+        missing.append("GROQ_API_KEY")
+    if not REPLICATE_API_TOKEN:
+        missing.append("REPLICATE_API_TOKEN")
+    return missing

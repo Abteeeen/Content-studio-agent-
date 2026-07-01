@@ -1,4 +1,9 @@
-"""Step 4: Use Claude Vision to pick the single best garment for the reel."""
+"""Step 4: Use Groq Vision (FREE) to pick the single best garment for the reel.
+
+Groq is 100% free — no credit card needed.
+Uses llama-3.2-90b-vision-preview which supports image analysis.
+Sign up at console.groq.com and grab your API key.
+"""
 
 from __future__ import annotations
 
@@ -6,17 +11,20 @@ import base64
 import logging
 import os
 
-import anthropic
+import requests
 
-from pipeline.config import ANTHROPIC_API_KEY
+from pipeline.config import GROQ_API_KEY
 from pipeline.models import Garment, Store, StoreStatus
 
 logger = logging.getLogger(__name__)
 
+GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
+GROQ_VISION_MODEL = "llama-3.2-90b-vision-preview"
+
 SELECTION_PROMPT = """You are a fashion content strategist for a video production agency.
 
-I'm showing you product images from a clothing store called "{store_name}".
-Your job: pick the ONE garment that will make the most impressive cinematic reel.
+You are looking at product images from a clothing store called "{store_name}".
+Pick the ONE garment that will make the most impressive cinematic reel.
 
 Criteria (in order of importance):
 1. Visual impact — bold colors, interesting textures, or striking silhouette
@@ -24,23 +32,15 @@ Criteria (in order of importance):
 3. Universally appealing — not too niche, would impress a store owner
 4. Clear product shot — the image is high quality enough to work with
 
-For each image, give:
-- category (dress, jacket, top, pants, etc.)
-- score 1-10
-- one-line reason
-
-Then declare the WINNER by its number.
-
-Respond in this exact format:
+Respond in this EXACT format (no extra text):
 IMAGE 1: category=dress | score=8 | Stunning red evening dress, perfect for dramatic lighting
 IMAGE 2: category=jacket | score=6 | Nice leather jacket but too dark for cinematic pop
-...
 WINNER: 1
 """
 
 
 def select_best_garment(store: Store, garments: list[Garment]) -> Garment | None:
-    """Use Claude Vision to analyze garment images and pick the best one."""
+    """Use Groq Vision (free) to analyze garment images and pick the best one."""
     if not garments:
         return None
 
@@ -49,51 +49,68 @@ def select_best_garment(store: Store, garments: list[Garment]) -> Garment | None
         logger.warning("No downloaded images available for %s", store.name)
         return None
 
-    candidates = candidates[:10]
+    # Groq vision handles up to 5 images per request efficiently
+    candidates = candidates[:5]
 
-    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+    if not GROQ_API_KEY:
+        logger.warning("GROQ_API_KEY not set — defaulting to first garment for %s", store.name)
+        store.status = StoreStatus.GARMENT_SELECTED
+        return candidates[0]
 
-    content = []
-    for i, garment in enumerate(candidates):
-        with open(garment.image_path, "rb") as f:
-            image_data = base64.b64encode(f.read()).decode()
+    try:
+        content = []
+        for i, garment in enumerate(candidates):
+            with open(garment.image_path, "rb") as f:
+                image_data = base64.b64encode(f.read()).decode()
 
-        ext = os.path.splitext(garment.image_path)[1].lower()
-        media_type = {
-            ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
-            ".png": "image/png", ".webp": "image/webp",
-        }.get(ext, "image/jpeg")
+            ext = os.path.splitext(garment.image_path)[1].lower()
+            media_type = {
+                ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+                ".png": "image/png", ".webp": "image/webp",
+            }.get(ext, "image/jpeg")
 
-        content.append({"type": "text", "text": f"IMAGE {i + 1}:"})
+            content.append({"type": "text", "text": f"IMAGE {i + 1}:"})
+            content.append({
+                "type": "image_url",
+                "image_url": {"url": f"data:{media_type};base64,{image_data}"},
+            })
+
         content.append({
-            "type": "image",
-            "source": {"type": "base64", "media_type": media_type, "data": image_data},
+            "type": "text",
+            "text": SELECTION_PROMPT.format(store_name=store.name),
         })
 
-    content.append({
-        "type": "text",
-        "text": SELECTION_PROMPT.format(store_name=store.name),
-    })
+        resp = requests.post(
+            GROQ_API_URL,
+            headers={
+                "Authorization": f"Bearer {GROQ_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": GROQ_VISION_MODEL,
+                "messages": [{"role": "user", "content": content}],
+                "max_tokens": 512,
+                "temperature": 0.1,
+            },
+            timeout=30,
+        )
+        resp.raise_for_status()
+        result_text = resp.json()["choices"][0]["message"]["content"]
 
-    response = client.messages.create(
-        model="claude-sonnet-5",
-        max_tokens=1024,
-        messages=[{"role": "user", "content": content}],
-    )
+        logger.info("Groq selection result for %s:\n%s", store.name, result_text)
 
-    result_text = response.content[0].text
-    logger.info("Selection result for %s:\n%s", store.name, result_text)
+        winner_idx = _parse_winner(result_text)
+        if winner_idx is not None and 0 <= winner_idx < len(candidates):
+            winner = candidates[winner_idx]
+            _parse_garment_details(result_text, winner_idx, winner)
+            winner.score = 10.0
+            store.status = StoreStatus.GARMENT_SELECTED
+            logger.info("Selected garment %d for %s: %s", winner_idx + 1, store.name, winner.description)
+            return winner
 
-    winner_idx = _parse_winner(result_text)
-    if winner_idx is not None and 0 <= winner_idx < len(candidates):
-        winner = candidates[winner_idx]
-        winner.score = 10.0
-        _parse_garment_details(result_text, winner_idx, winner)
-        store.status = StoreStatus.GARMENT_SELECTED
-        logger.info("Selected garment %d for %s: %s", winner_idx + 1, store.name, winner.description)
-        return winner
+    except Exception as e:
+        logger.error("Groq selection failed for %s: %s — using first garment", store.name, e)
 
-    logger.warning("Could not parse winner for %s, defaulting to first", store.name)
     store.status = StoreStatus.GARMENT_SELECTED
     return candidates[0]
 

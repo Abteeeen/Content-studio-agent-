@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import time
 import requests
 from pipeline.config import GOOGLE_MAPS_API_KEY, PLACES_SEARCH_RADIUS
 from pipeline.models import Store
@@ -49,6 +50,7 @@ def search_clothing_stores(lat: float, lng: float, radius: int = PLACES_SEARCH_R
         next_token = data.get("next_page_token")
         if not next_token:
             break
+        time.sleep(2)  # Google requires a short delay before next_page_token is valid
         params = {"pagetoken": next_token, "key": GOOGLE_MAPS_API_KEY}
 
     logger.info("Discovered %d clothing stores near (%.4f, %.4f)", len(stores), lat, lng)
