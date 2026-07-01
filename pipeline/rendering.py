@@ -516,13 +516,23 @@ def _render_wavespeed(store: Store, garment: Garment) -> ReelOutput:
             logger.info("Uploading try-on result to tmpfiles.org for WaveSpeed...")
             try:
                 image_input = _upload_tmpfiles(tryon_path)
-                logger.info("Uploaded: %s", image_input)
+                logger.info("Uploaded try-on: %s", image_input)
             except Exception as upload_err:
                 logger.warning("tmpfiles upload failed (%s) — falling back to resized base64", upload_err)
                 image_input, _ = _resize_image_b64(tryon_path, max_px=768)
-        elif garment.image_url and garment.image_url.startswith("http"):
+        elif garment.image_url and garment.image_url.startswith("https://"):
+            # Only use the URL directly when it's already HTTPS
             image_input = garment.image_url
-            logger.info("Using garment URL directly: %s", image_input)
+            logger.info("Using garment HTTPS URL directly: %s", image_input)
+        elif garment.image_path and os.path.exists(garment.image_path):
+            # HTTP URL or local file — upload to get a guaranteed HTTPS URL
+            logger.info("Uploading garment image to tmpfiles.org (HTTP URL or local file)...")
+            try:
+                image_input = _upload_tmpfiles(garment.image_path)
+                logger.info("Uploaded garment: %s", image_input)
+            except Exception as upload_err:
+                logger.warning("tmpfiles upload failed (%s) — falling back to resized base64", upload_err)
+                image_input, _ = _resize_image_b64(garment.image_path, max_px=768)
         else:
             image_input, _ = _resize_image_b64(tryon_path, max_px=768)
             logger.info("Using resized base64 of garment image")
@@ -533,12 +543,14 @@ def _render_wavespeed(store: Store, garment: Garment) -> ReelOutput:
             json={
                 "image": image_input,
                 "prompt": f"cinematic fashion reel, model wearing {garment.description or 'stylish clothing'}, smooth camera movement, professional lighting",
-                "duration": 4,
+                "duration": 5,
                 "resolution": "480p",
                 "enable_safety_checker": True,
             },
             timeout=90,
         )
+        if not submit_resp.ok:
+            logger.error("WaveSpeedAI submit error %d: %s", submit_resp.status_code, submit_resp.text[:500])
         submit_resp.raise_for_status()
         submit_data = submit_resp.json()
 
