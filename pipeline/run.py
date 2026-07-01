@@ -30,6 +30,8 @@ def run_pipeline(
     city: str,
     radius: int = 5000,
     limit: int = 10,
+    offset: int = 0,
+    exclude: list[str] | None = None,
     dry_run: bool = False,
     render_method: str = "replicate",
     mail_service: str = "lob",
@@ -37,6 +39,7 @@ def run_pipeline(
 ) -> list[OutreachResult]:
     """Execute the full pipeline: discover → qualify → extract → select → render → postcard → mail."""
     results: list[OutreachResult] = []
+    exclude_lower = {name.lower().strip() for name in (exclude or [])}
 
     # Step 1: Discover
     logger.info("Step 1/7: Discovering clothing stores in %s via %s...", city, source)
@@ -47,8 +50,14 @@ def run_pipeline(
     # Step 2: Qualify
     logger.info("Step 2/7: Qualifying stores...")
     qualified = qualify_stores(stores)
-    qualified = qualified[:limit]
-    logger.info("Processing top %d qualified stores", len(qualified))
+
+    if exclude_lower:
+        before = len(qualified)
+        qualified = [s for s in qualified if s.name.lower().strip() not in exclude_lower]
+        logger.info("Excluded %d store(s): %s", before - len(qualified), list(exclude_lower))
+
+    qualified = qualified[offset: offset + limit]
+    logger.info("Processing %d qualified stores (offset=%d)", len(qualified), offset)
 
     for i, store in enumerate(qualified):
         result = OutreachResult(store=store)
@@ -203,6 +212,8 @@ def main() -> None:
     parser.add_argument("--city", default="Los Angeles", help="Target city")
     parser.add_argument("--radius", type=int, default=5000, help="Search radius in meters")
     parser.add_argument("--limit", type=int, default=10, help="Max stores to process")
+    parser.add_argument("--offset", type=int, default=0, help="Skip first N qualified stores")
+    parser.add_argument("--exclude", nargs="+", metavar="NAME", help='Store names to skip, e.g. --exclude "Image Gear USA" "H&M"')
     parser.add_argument("--dry-run", action="store_true", help="Discover and select only, skip render/mail")
     parser.add_argument("--demo", action="store_true", help="Run with sample data, no API keys needed")
     parser.add_argument("--source", default="yelp", choices=["yelp", "osm", "google"],
@@ -223,6 +234,8 @@ def main() -> None:
             city=args.city,
             radius=args.radius,
             limit=args.limit,
+            offset=args.offset,
+            exclude=args.exclude,
             dry_run=args.dry_run,
             render_method=args.render_method,
             mail_service=args.mail_service,
