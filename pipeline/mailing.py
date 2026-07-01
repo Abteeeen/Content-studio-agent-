@@ -73,31 +73,40 @@ def _mail_via_lob(store: Store, postcard: PostcardOutput) -> str:
         "size": "6x4",
     }
 
-    resp = requests.post(
-        LOB_POSTCARDS_URL,
-        auth=(LOB_API_KEY, ""),
-        files={
-            "front": ("front.png", open(postcard.front_path, "rb"), "image/png"),
-            "back": ("back.png", open(postcard.back_path, "rb"), "image/png"),
-        },
-        data={
-            "description": payload["description"],
-            "to[name]": payload["to"]["name"],
-            "to[address_line1]": payload["to"]["address_line1"],
-            "to[address_city]": payload["to"]["city"] if "city" in payload["to"] else address_parts.get("city", ""),
-            "to[address_state]": address_parts.get("state", ""),
-            "to[address_zip]": address_parts.get("zip", ""),
-            "to[address_country]": "US",
-            "from[name]": "Your Agency Name",
-            "from[address_line1]": "123 Agency Street",
-            "from[address_city]": "Los Angeles",
-            "from[address_state]": "CA",
-            "from[address_zip]": "90001",
-            "from[address_country]": "US",
-            "size": "6x4",
-        },
-        timeout=30,
-    )
+    city = address_parts.get("city", "")
+    state = address_parts.get("state", "")
+    zipcode = address_parts.get("zip", "")
+
+    if not city or not state or not zipcode:
+        logger.warning("Incomplete address for %s: '%s' — skipping mail", store.name, store.address)
+        return "SKIPPED_BAD_ADDRESS"
+
+    with open(postcard.front_path, "rb") as front_f, open(postcard.back_path, "rb") as back_f:
+        resp = requests.post(
+            LOB_POSTCARDS_URL,
+            auth=(LOB_API_KEY, ""),
+            files={
+                "front": ("front.png", front_f, "image/png"),
+                "back": ("back.png", back_f, "image/png"),
+            },
+            data={
+                "description": payload["description"],
+                "to[name]": payload["to"]["name"],
+                "to[address_line1]": payload["to"]["address_line1"],
+                "to[address_city]": city,
+                "to[address_state]": state,
+                "to[address_zip]": zipcode,
+                "to[address_country]": "US",
+                "from[name]": os.getenv("AGENCY_NAME", "Your Agency Name"),
+                "from[address_line1]": "123 Agency Street",
+                "from[address_city]": "Los Angeles",
+                "from[address_state]": "CA",
+                "from[address_zip]": "90001",
+                "from[address_country]": "US",
+                "size": "6x4",
+            },
+            timeout=30,
+        )
     resp.raise_for_status()
     result = resp.json()
 

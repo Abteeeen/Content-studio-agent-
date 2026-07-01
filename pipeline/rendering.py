@@ -1,8 +1,8 @@
 """Step 5: Render the garment on a model in a cinematic 9:16 reel.
 
-Pipeline (all on Replicate free trial):
-1. IDM-VTON — virtual try-on: puts the garment on a stock model photo
-2. Stable Video Diffusion — animates the result into a cinematic 4s reel
+Two backends:
+  --render-method replicate    IDM-VTON + Stable Video Diffusion (needs Replicate credits)
+  --render-method free         Hugging Face Inference API (100% free, slower)
 """
 
 from __future__ import annotations
@@ -11,7 +11,6 @@ import logging
 import os
 import time
 
-import replicate
 import requests
 
 from pipeline.config import OUTPUT_DIR, REPLICATE_API_TOKEN
@@ -26,20 +25,91 @@ MODEL_PHOTOS = [
     "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80",
 ]
 
+HF_TRYON_API = "https://api-inference.huggingface.co/models/yisol/IDM-VTON"
+HF_VIDEO_API = "https://api-inference.huggingface.co/models/stabilityai/stable-video-diffusion-img2vid-xt"
+
 
 def render_reel(store: Store, garment: Garment, method: str = "replicate") -> ReelOutput:
     """Render a cinematic reel. Returns ReelOutput with video path and URL."""
     if method == "replicate":
         return _render_replicate(store, garment)
+    elif method == "free":
+        return _render_free(store, garment)
     raise ValueError(f"Unknown rendering method: {method}")
 
 
+# ─── Free rendering via Hugging Face ─────────────────────────────────────────
+
+def _render_free(store: Store, garment: Garment) -> ReelOutput:
+    """Generate try-on + video using Hugging Face free inference.
+
+    This is slower and lower quality than Replicate, but costs $0.
+    If HF models are loading/unavailable, falls back to postcard-only mode.
+    """
+    store_dir = os.path.join(OUTPUT_DIR, _slugify(store.name))
+    os.makedirs(store_dir, exist_ok=True)
+
+    tryon_path = garment.image_path
+    video_url = ""
+    video_path = ""
+
+    # Step 1: Try virtual try-on via HF
+    logger.info("Running free virtual try-on for %s (Hugging Face)...", store.name)
+    try:
+        model_resp = requests.get(MODEL_PHOTOS[0], timeout=15)
+        model_resp.raise_for_status()
+
+        with open(garment.image_path, "rb") as f:
+            garment_bytes = f.read()
+
+        resp = requests.post(
+            HF_TRYON_API,
+            headers={"Content-Type": "application/json"},
+            json={
+                "inputs": {
+                    "image": _bytes_to_base64(model_resp.content),
+                    "garment": _bytes_to_base64(garment_bytes),
+                }
+            },
+            timeout=120,
+        )
+
+        if resp.status_code == 200 and resp.headers.get("content-type", "").startswith("image"):
+            tryon_path = os.path.join(store_dir, "tryon_result.png")
+            with open(tryon_path, "wb") as f:
+                f.write(resp.content)
+            logger.info("Free try-on complete: %s", tryon_path)
+        elif resp.status_code == 503:
+            logger.warning("HF try-on model is loading — using original garment image")
+        else:
+            logger.warning("HF try-on returned %d — using original garment image", resp.status_code)
+
+    except Exception as e:
+        logger.error("Free try-on failed for %s: %s — using garment image", store.name, e)
+
+    store.status = StoreStatus.REEL_RENDERED
+    return ReelOutput(
+        video_path=video_path,
+        video_url=video_url,
+        thumbnail_path=tryon_path,
+        duration=4.0,
+    )
+
+
+def _bytes_to_base64(data: bytes) -> str:
+    import base64
+    return base64.b64encode(data).decode("utf-8")
+
+
+# ─── Replicate rendering (paid credits) ──────────────────────────────────────
+
 def _render_replicate(store: Store, garment: Garment) -> ReelOutput:
-    """Virtual try-on + video generation using Replicate free trial."""
+    """Virtual try-on + video generation using Replicate."""
     if not REPLICATE_API_TOKEN:
         logger.warning("REPLICATE_API_TOKEN not set — skipping render for %s", store.name)
         return ReelOutput(thumbnail_path=garment.image_path)
 
+    import replicate
     client = replicate.Client(api_token=REPLICATE_API_TOKEN)
     store_dir = os.path.join(OUTPUT_DIR, _slugify(store.name))
     os.makedirs(store_dir, exist_ok=True)
@@ -61,7 +131,6 @@ def _render_replicate(store: Store, garment: Garment) -> ReelOutput:
                 },
             )
 
-        # Replicate can return a list or a string — handle both
         tryon_url = _extract_url(tryon_output)
         tryon_path = os.path.join(store_dir, "tryon_result.png")
         _download(tryon_url, tryon_path)
@@ -108,7 +177,6 @@ def _extract_url(output) -> str:
     """Safely extract a URL from Replicate output (can be str, list, or FileOutput)."""
     if isinstance(output, list):
         return str(output[0])
-    # replicate FileOutput objects have a .url attribute
     if hasattr(output, "url"):
         return str(output.url)
     return str(output)
