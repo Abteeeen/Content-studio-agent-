@@ -1,14 +1,12 @@
-anthropic>=0.39.0
 requests>=2.31.0
 beautifulsoup4>=4.12.0
 Pillow>=10.0.0
 qrcode>=7.4
-playwright>=1.40.0
 python-dotenv>=1.0.0
-lob>=6.0.0
 replicate>=0.25.0
 pydantic>=2.5.0
 aiohttp>=3.9.0
 flask>=3.0.0
 flask-sqlalchemy>=3.1.0
 flask-mail>=0.10.0
+lob-python>=6.0.0
