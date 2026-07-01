@@ -100,6 +100,22 @@ def _render_free(store: Store, garment: Garment) -> ReelOutput:
     )
 
 
+def _fal_upload(file_path: str, headers: dict) -> str:
+    """Upload a local file to fal.ai storage and return the public URL."""
+    ext = os.path.splitext(file_path)[1].lower()
+    mime = {".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png"}.get(ext, "image/jpeg")
+    upload_headers = {k: v for k, v in headers.items() if k != "Content-Type"}
+    with open(file_path, "rb") as f:
+        resp = requests.post(
+            "https://storage.fal.run/",
+            headers=upload_headers,
+            files={"file": (os.path.basename(file_path), f, mime)},
+            timeout=60,
+        )
+    resp.raise_for_status()
+    return resp.json()["url"]
+
+
 def _bytes_to_base64(data: bytes) -> str:
     import base64
     return base64.b64encode(data).decode("utf-8")
@@ -126,55 +142,62 @@ def _render_fal(store: Store, garment: Garment) -> ReelOutput:
     video_path = ""
     video_url = ""
 
-    # Step 1: Virtual try-on via fal.ai IDM-VTON
+    # Step 1: Upload images to fal.ai storage (fal requires real URLs, not base64)
+    logger.info("Uploading images to fal.ai storage for %s...", store.name)
+    try:
+        garment_url = _fal_upload(garment.image_path, headers)
+        model_resp = requests.get(MODEL_PHOTOS[0], timeout=15)
+        model_resp.raise_for_status()
+        model_path = os.path.join(store_dir, "model.jpg")
+        with open(model_path, "wb") as f:
+            f.write(model_resp.content)
+        model_url = _fal_upload(model_path, headers)
+    except Exception as e:
+        logger.error("fal.ai image upload failed for %s: %s — using garment image", store.name, e)
+        store.status = StoreStatus.REEL_RENDERED
+        return ReelOutput(thumbnail_path=tryon_path)
+
+    # Step 2: Virtual try-on via fal.ai IDM-VTON
     logger.info("Running fal.ai virtual try-on for %s...", store.name)
     try:
-        with open(garment.image_path, "rb") as f:
-            garment_b64 = _bytes_to_base64(f.read())
-
-        model_resp = requests.get(MODEL_PHOTOS[0], timeout=15)
-        model_b64 = _bytes_to_base64(model_resp.content)
-
         resp = requests.post(
             FAL_TRYON_URL,
             headers=headers,
             json={
-                "human_image_url": f"data:image/jpeg;base64,{model_b64}",
-                "garment_image_url": f"data:image/jpeg;base64,{garment_b64}",
+                "human_image_url": model_url,
+                "garment_image_url": garment_url,
                 "garment_description": garment.description or "Fashion garment",
                 "category": garment.category or "upper_body",
             },
-            timeout=120,
+            timeout=180,
         )
         resp.raise_for_status()
         result = resp.json()
 
-        tryon_url = result.get("image", {}).get("url", "")
-        if tryon_url:
+        tryon_img_url = result.get("image", {}).get("url", "")
+        if tryon_img_url:
             tryon_path = os.path.join(store_dir, "tryon_result.png")
-            _download(tryon_url, tryon_path)
+            _download(tryon_img_url, tryon_path)
             logger.info("fal.ai try-on complete: %s", tryon_path)
         else:
-            logger.warning("fal.ai try-on returned no image URL — using garment image")
+            logger.warning("fal.ai try-on returned no image — using garment image. Response: %s", result)
 
     except Exception as e:
         logger.error("fal.ai try-on failed for %s: %s — using garment image", store.name, e)
 
-    # Step 2: Animate to video via fal.ai stable-video
+    # Step 3: Animate to video via fal.ai stable-video
     logger.info("Generating video reel via fal.ai for %s...", store.name)
     try:
-        with open(tryon_path, "rb") as f:
-            img_b64 = _bytes_to_base64(f.read())
-
+        tryon_url_for_video = _fal_upload(tryon_path, headers)
         resp = requests.post(
             FAL_VIDEO_URL,
             headers=headers,
             json={
-                "image_url": f"data:image/png;base64,{img_b64}",
+                "image_url": tryon_url_for_video,
                 "motion_bucket_id": 127,
                 "fps": 6,
             },
-            timeout=180,
+            timeout=240,
         )
         resp.raise_for_status()
         result = resp.json()
