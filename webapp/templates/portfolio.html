@@ -1,616 +1,544 @@
 {% extends "base.html" %}
-{% block title %}Outreach Autopilot — Turn Clothing Stores Into Clients On Autopilot{% endblock %}
+{% block title %}Outreach Autopilot — Clothing Store AI Agent{% endblock %}
 
 {% block extra_css %}
 <style>
-    .hero {
-        padding: 120px 0 80px;
-        text-align: center;
-    }
+    /* ── Shared layout ── */
+    section { padding: 80px 0; }
+    h2 { font-size: 32px; font-weight: 700; margin-bottom: 12px; }
+    .subtitle { color: var(--text-muted); font-size: 16px; margin-bottom: 48px; }
+
+    /* ── Hero ── */
+    .hero { padding: 100px 0 72px; text-align: center; }
     .hero-badge {
         display: inline-block;
-        background: rgba(245, 158, 11, 0.1);
-        border: 1px solid rgba(245, 158, 11, 0.3);
-        color: var(--accent);
-        padding: 6px 16px;
-        border-radius: 20px;
-        font-size: 13px;
-        font-weight: 600;
-        margin-bottom: 24px;
+        background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3);
+        color: var(--accent); padding: 5px 14px; border-radius: 20px;
+        font-size: 12px; font-weight: 700; letter-spacing: 0.08em;
+        text-transform: uppercase; margin-bottom: 20px;
     }
-    .hero h1 {
-        font-size: clamp(36px, 5vw, 64px);
-        font-weight: 800;
-        line-height: 1.1;
-        margin-bottom: 24px;
-        letter-spacing: -1px;
-    }
-    .hero h1 .highlight {
-        background: linear-gradient(135deg, var(--accent), #f97316);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-    }
-    .hero p {
-        font-size: 20px;
-        color: var(--text-muted);
-        max-width: 600px;
-        margin: 0 auto 40px;
-    }
-    .hero-buttons { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+    .hero h1 { font-size: clamp(30px, 5vw, 56px); font-weight: 800; line-height: 1.12; margin-bottom: 20px; }
+    .hero h1 .accent { color: var(--accent); }
+    .hero p { font-size: 17px; color: var(--text-muted); max-width: 580px; margin: 0 auto 36px; }
+    .hero-btns { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+    .hero-stats { display: flex; justify-content: center; gap: 48px; flex-wrap: wrap; margin-top: 60px; padding-top: 40px; border-top: 1px solid var(--border); }
+    .hero-stat .n { font-size: 28px; font-weight: 800; color: var(--accent); }
+    .hero-stat .l { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
 
-    /* Pipeline visual */
-    .pipeline-section {
-        padding: 80px 0;
+    /* ── How it works ── */
+    .steps-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
+    .step-card {
+        background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+        padding: 24px; position: relative; transition: border-color 0.2s;
     }
-    .pipeline-section h2 {
-        text-align: center;
-        font-size: 36px;
-        margin-bottom: 16px;
+    .step-card:hover { border-color: var(--accent); }
+    .step-num {
+        width: 32px; height: 32px; border-radius: 50%;
+        background: rgba(245,158,11,0.12); color: var(--accent);
+        font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center;
+        margin-bottom: 14px;
     }
-    .pipeline-section .subtitle {
-        text-align: center;
-        color: var(--text-muted);
-        margin-bottom: 60px;
-        font-size: 18px;
-    }
-    .pipeline-steps {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: 24px;
-    }
-    .step {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 16px;
-        padding: 32px;
-        position: relative;
-        transition: border-color 0.3s;
-    }
-    .step:hover { border-color: var(--accent); }
-    .step-number {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        background: rgba(245, 158, 11, 0.15);
-        color: var(--accent);
-        font-weight: 700;
-        font-size: 14px;
-        margin-bottom: 16px;
-    }
-    .step h3 { font-size: 18px; margin-bottom: 8px; }
-    .step p { color: var(--text-muted); font-size: 14px; line-height: 1.6; }
-    .step .tech { color: var(--accent); font-size: 12px; margin-top: 12px; font-weight: 600; }
-    .step .auto-badge {
-        position: absolute;
-        top: 16px;
-        right: 16px;
-        font-size: 11px;
-        background: rgba(34, 197, 94, 0.15);
-        color: var(--success);
-        padding: 3px 10px;
-        border-radius: 12px;
-        font-weight: 600;
+    .step-card h3 { font-size: 15px; margin-bottom: 6px; }
+    .step-card p { color: var(--text-muted); font-size: 13px; line-height: 1.6; }
+    .step-tech { color: var(--accent); font-size: 11px; font-weight: 700; margin-top: 10px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .auto-dot {
+        position: absolute; top: 14px; right: 14px;
+        background: rgba(34,197,94,0.12); color: var(--success);
+        font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px;
     }
 
-    /* Sample output showcase */
-    .showcase {
-        padding: 80px 0;
-    }
-    .showcase h2 {
-        text-align: center;
-        font-size: 36px;
-        margin-bottom: 60px;
-    }
-    .showcase-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-        gap: 32px;
-    }
-    .showcase-card {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 16px;
-        overflow: hidden;
-    }
-    .showcase-card .preview {
-        background: var(--surface-2);
-        padding: 24px;
-        display: flex;
-        gap: 16px;
-        align-items: center;
-        min-height: 200px;
-    }
-    .showcase-card .preview .postcard-mock {
-        background: #1a1a1a;
-        border-radius: 8px;
-        padding: 20px;
-        flex: 1;
-        min-height: 140px;
-        display: flex;
-        flex-direction: column;
-        justify-content: flex-end;
-    }
-    .showcase-card .preview .postcard-mock h4 {
-        font-size: 13px;
-        color: #fff;
-        margin-bottom: 4px;
-    }
-    .showcase-card .preview .postcard-mock p {
-        font-size: 11px;
-        color: #888;
-    }
-    .showcase-card .preview .qr-mock {
-        width: 80px;
-        height: 80px;
-        background: #fff;
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 10px;
-        color: #333;
-        font-weight: 600;
-    }
-    .showcase-card .details {
-        padding: 24px;
-    }
-    .showcase-card .details h3 { font-size: 18px; margin-bottom: 4px; }
-    .showcase-card .details .address { color: var(--text-muted); font-size: 13px; margin-bottom: 12px; }
-    .showcase-card .details .stats {
-        display: flex;
-        gap: 20px;
-    }
-    .showcase-card .details .stat {
-        font-size: 13px;
-    }
-    .showcase-card .details .stat strong { color: var(--accent); }
+    /* ── Results ── */
+    .results-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; }
+    .result-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+    .result-card video { width: 100%; display: block; height: 220px; object-fit: cover; background: #000; }
+    .result-card .img-wrap { height: 200px; display: flex; align-items: center; justify-content: center; background: var(--surface-2); padding: 12px; }
+    .result-card .img-wrap img { max-height: 176px; max-width: 100%; object-fit: contain; border-radius: 6px; }
+    .result-body { padding: 18px; }
+    .result-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 4px; }
+    .result-name { font-weight: 700; font-size: 15px; margin-bottom: 6px; }
+    .result-detail { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+    .result-tags { margin-top: 12px; display: flex; gap: 6px; flex-wrap: wrap; }
+    .rtag { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 999px; }
+    .rtag-green { background: rgba(34,197,94,0.12); color: var(--success); }
+    .rtag-amber { background: rgba(245,158,11,0.12); color: var(--accent); }
+    .rtag-blue { background: rgba(99,102,241,0.12); color: #818cf8; }
 
-    /* Specs */
-    .specs {
-        padding: 80px 0;
-    }
-    .specs h2 {
-        text-align: center;
-        font-size: 36px;
-        margin-bottom: 60px;
-    }
-    .specs-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-        gap: 24px;
-    }
-    .spec-card {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 28px;
-        text-align: center;
-    }
-    .spec-card .number {
-        font-size: 42px;
-        font-weight: 800;
-        color: var(--accent);
-        margin-bottom: 8px;
-    }
-    .spec-card .label {
-        font-size: 14px;
-        color: var(--text-muted);
-    }
+    /* ── Path comparison ── */
+    .path-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .path-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 28px; }
+    .path-card.active { border-color: var(--success); }
+    .path-card.upgrade { border-color: rgba(245,158,11,0.4); }
+    .path-badge { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 10px; }
+    .path-card.active .path-badge { color: var(--success); }
+    .path-card.upgrade .path-badge { color: var(--accent); }
+    .path-card h3 { font-size: 18px; margin-bottom: 4px; }
+    .path-price { font-size: 30px; font-weight: 800; margin-bottom: 20px; }
+    .path-card.active .path-price { color: var(--success); }
+    .path-card.upgrade .path-price { color: var(--accent); }
+    .path-rows { display: flex; flex-direction: column; gap: 10px; }
+    .path-row { font-size: 13px; color: var(--text-muted); display: flex; gap: 8px; }
+    .path-row::before { content: '✓'; color: var(--success); font-weight: 700; flex-shrink: 0; }
+    .path-row.limit::before { content: '~'; color: var(--accent); }
 
-    /* Try-on explainer */
-    .tryon-section {
-        padding: 80px 0;
-    }
-    .tryon-section h2 {
-        text-align: center;
-        font-size: 36px;
-        margin-bottom: 16px;
-    }
-    .tryon-section .subtitle {
-        text-align: center;
-        color: var(--text-muted);
-        margin-bottom: 60px;
-        font-size: 18px;
-    }
-    .tryon-flow {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 24px;
-        flex-wrap: wrap;
-        margin-bottom: 40px;
-    }
-    .tryon-box {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 24px 32px;
-        text-align: center;
-        min-width: 180px;
-    }
-    .tryon-box .icon { font-size: 32px; margin-bottom: 8px; }
-    .tryon-box h4 { font-size: 14px; margin-bottom: 4px; }
-    .tryon-box p { font-size: 12px; color: var(--text-muted); }
-    .tryon-arrow { font-size: 24px; color: var(--accent); }
+    /* ── Buyer section ── */
+    .buyer-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 48px; }
+    .buyer-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; }
+    .buyer-icon { font-size: 28px; margin-bottom: 12px; }
+    .buyer-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+    .buyer-card p { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
 
-    /* Pricing */
-    .pricing {
-        padding: 80px 0;
-    }
-    .pricing h2 {
-        text-align: center;
-        font-size: 36px;
-        margin-bottom: 60px;
-    }
-    .pricing-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 24px;
-    }
-    .price-card {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 16px;
-        padding: 36px;
-    }
-    .price-card.featured {
-        border-color: var(--accent);
-        position: relative;
-    }
-    .price-card.featured::before {
-        content: 'MOST POPULAR';
-        position: absolute;
-        top: -12px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: var(--accent);
-        color: #000;
-        padding: 4px 16px;
-        border-radius: 12px;
-        font-size: 11px;
-        font-weight: 700;
-    }
-    .price-card h3 { font-size: 20px; margin-bottom: 8px; }
-    .price-card .price { font-size: 42px; font-weight: 800; margin-bottom: 4px; }
-    .price-card .price span { font-size: 16px; color: var(--text-muted); font-weight: 400; }
-    .price-card .desc { color: var(--text-muted); font-size: 14px; margin-bottom: 24px; }
-    .price-card ul { list-style: none; margin-bottom: 32px; }
-    .price-card li {
-        padding: 8px 0;
-        font-size: 14px;
-        color: var(--text-muted);
-        border-bottom: 1px solid var(--border);
-    }
-    .price-card li::before {
-        content: '\2713';
-        color: var(--success);
-        margin-right: 10px;
-        font-weight: 700;
-    }
+    .use-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .use-table th { text-align: left; padding: 10px 14px; background: var(--surface-2); color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+    .use-table td { padding: 12px 14px; border-bottom: 1px solid var(--border); color: var(--text-muted); vertical-align: top; }
+    .use-table td:first-child { color: var(--text); font-weight: 600; }
+    .use-table tr:last-child td { border-bottom: none; }
 
-    /* CTA */
-    .cta {
-        padding: 100px 0;
-        text-align: center;
+    .income-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+    .income-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; text-align: center; }
+    .income-n { font-size: 26px; font-weight: 800; color: var(--accent); margin-bottom: 4px; }
+    .income-l { font-size: 12px; color: var(--text-muted); }
+
+    .cmd-block {
+        background: #0d1117; border: 1px solid #30363d; border-radius: 8px;
+        padding: 16px 20px; font-family: 'Courier New', monospace; font-size: 13px;
+        color: #7ee787; line-height: 1.8; margin: 16px 0; overflow-x: auto;
     }
-    .cta h2 {
-        font-size: 42px;
-        margin-bottom: 16px;
-    }
-    .cta p {
-        color: var(--text-muted);
-        font-size: 18px;
-        margin-bottom: 40px;
+    .cmd-comment { color: #8b949e; }
+
+    /* ── Failed attempts ── */
+    .fail-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .fail-table th { text-align: left; padding: 9px 14px; background: var(--surface-2); color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .fail-table td { padding: 11px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .fail-table tr:last-child td { border-bottom: none; }
+    .fail-table td:first-child { color: #f87171; font-weight: 600; }
+    .fail-table td:nth-child(2) { color: var(--text-muted); }
+    .fail-table td:nth-child(3) { color: var(--success); font-size: 12px; }
+
+    @media (max-width: 640px) {
+        .path-grid { grid-template-columns: 1fr; }
+        .hero-stats { gap: 28px; }
     }
 </style>
 {% endblock %}
 
 {% block content %}
 
-<!-- Hero -->
+<!-- ── HERO ── -->
 <section class="hero">
     <div class="container">
-        <div class="hero-badge">AI-Powered Outreach Agent</div>
+        <div class="hero-badge">AI Agent · End-to-End Autonomous</div>
         <h1>
             Find clothing stores.<br>
-            Make them a <span class="highlight">cinematic reel</span>.<br>
-            Mail it on autopilot.
+            Make their <span class="accent">cinematic reel</span>.<br>
+            Mail it. On autopilot.
         </h1>
         <p>
-            One command discovers offline clothing stores, puts their clothes on a model,
-            generates a cinematic video, and mails them a postcard with a QR code to watch it.
+            One command discovers real offline clothing stores, selects their best product using AI,
+            generates a video, prints a postcard, and physically mails it to the owner — zero manual steps.
         </p>
-        <div class="hero-buttons">
+        <div class="hero-btns">
             <a href="/dashboard" class="btn btn-primary">Launch Dashboard</a>
             <a href="#how-it-works" class="btn btn-outline">See How It Works</a>
+            <a href="#get-this" class="btn btn-outline">Get This Workflow</a>
+        </div>
+        <div class="hero-stats">
+            <div class="hero-stat"><div class="n">7</div><div class="l">Autonomous Steps</div></div>
+            <div class="hero-stat"><div class="n">56</div><div class="l">Stores Found in LA</div></div>
+            <div class="hero-stat"><div class="n">$0.10</div><div class="l">Cost per Store</div></div>
+            <div class="hero-stat"><div class="n">0</div><div class="l">Human Decisions</div></div>
+            <div class="hero-stat"><div class="n">90%+</div><div class="l">Postcard Open Rate</div></div>
         </div>
     </div>
 </section>
 
-<!-- Specs -->
-<section class="specs">
-    <div class="container">
-        <div class="specs-grid">
-            <div class="spec-card">
-                <div class="number">$1.80</div>
-                <div class="label">Cost per lead (API + postage)</div>
-            </div>
-            <div class="spec-card">
-                <div class="number">95%</div>
-                <div class="label">Fully automated</div>
-            </div>
-            <div class="spec-card">
-                <div class="number">90%+</div>
-                <div class="label">Postcard open rate</div>
-            </div>
-            <div class="spec-card">
-                <div class="number">7</div>
-                <div class="label">Pipeline steps, zero manual work</div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- Pipeline Steps -->
-<section class="pipeline-section" id="how-it-works">
+<!-- ── HOW IT WORKS ── -->
+<section id="how-it-works" style="border-top: 1px solid var(--border);">
     <div class="container">
         <h2>How the Agent Works</h2>
-        <p class="subtitle">7 steps, fully automated, from discovery to doorstep</p>
-
-        <div class="pipeline-steps">
-            <div class="step">
-                <div class="auto-badge">AUTO</div>
-                <div class="step-number">1</div>
-                <h3>Discovery</h3>
-                <p>Searches Google Maps for offline clothing stores in your target city and radius.</p>
-                <div class="tech">Google Places API (free $200/mo credit)</div>
+        <p class="subtitle">7 fully automated steps. Give it a city — it handles everything else.</p>
+        <div class="steps-grid">
+            <div class="step-card">
+                <div class="auto-dot">AUTO</div>
+                <div class="step-num">1</div>
+                <h3>Discover Stores</h3>
+                <p>Queries OpenStreetMap or Yelp for clothing stores near any city. Found 56 stores in Los Angeles in under 10 seconds.</p>
+                <div class="step-tech">OSM / Yelp / Google Places</div>
             </div>
-            <div class="step">
-                <div class="auto-badge">AUTO</div>
-                <div class="step-number">2</div>
-                <h3>Qualification</h3>
-                <p>Scores each store 0-100 based on rating, reviews, website quality, and photo count. Drops low-quality leads.</p>
-                <div class="tech">Custom scoring algorithm</div>
+            <div class="step-card">
+                <div class="auto-dot">AUTO</div>
+                <div class="step-num">2</div>
+                <h3>Score &amp; Qualify</h3>
+                <p>Scores every store 0–100 on website quality, contact info, address completeness. Drops chains and incomplete leads. 20/56 passed.</p>
+                <div class="step-tech">Custom scoring engine</div>
             </div>
-            <div class="step">
-                <div class="auto-badge">AUTO</div>
-                <div class="step-number">3</div>
-                <h3>Clothing Extraction</h3>
-                <p>Scrapes product images from the store's website. Also pulls photos from their Google listing.</p>
-                <div class="tech">Playwright + BeautifulSoup (free)</div>
+            <div class="step-card">
+                <div class="auto-dot">AUTO</div>
+                <div class="step-num">3</div>
+                <h3>Scrape Their Products</h3>
+                <p>Visits the store's actual website and pulls clothing images using BeautifulSoup. No API needed — works on any website.</p>
+                <div class="step-tech">BeautifulSoup scraper</div>
             </div>
-            <div class="step">
-                <div class="auto-badge">AUTO</div>
-                <div class="step-number">4</div>
-                <h3>Best Piece Selection</h3>
-                <p>AI vision analyzes every garment and picks the single piece with the most cinematic potential.</p>
-                <div class="tech">Claude Vision API</div>
+            <div class="step-card">
+                <div class="auto-dot">AUTO</div>
+                <div class="step-num">4</div>
+                <h3>AI Picks Best Garment</h3>
+                <p>Sends all images to Groq Vision AI. Scores each on color, silhouette, uniqueness, and cinematic impact. Picks winner with a written reason.</p>
+                <div class="step-tech">Groq Llama 4 Scout Vision</div>
             </div>
-            <div class="step">
-                <div class="auto-badge">AUTO</div>
-                <div class="step-number">5</div>
-                <h3>Model + Cinematic Reel</h3>
-                <p>Virtual try-on puts the garment on a model. Then generates a cinematic 9:16 video reel with movement.</p>
-                <div class="tech">Replicate (IDM-VTON + SVD)</div>
+            <div class="step-card">
+                <div class="auto-dot">AUTO</div>
+                <div class="step-num">5</div>
+                <h3>Generate Video Reel</h3>
+                <p>Optionally places the garment on a model (virtual try-on), then animates it into a 5-second cinematic video. Falls back gracefully if any API fails.</p>
+                <div class="step-tech">WaveSpeedAI WAN 2.7 + Segmind</div>
             </div>
-            <div class="step">
-                <div class="auto-badge">AUTO</div>
-                <div class="step-number">6</div>
-                <h3>Postcard Generation</h3>
-                <p>Creates a 300 DPI print-ready postcard — cinematic frame on front, personalized letter + QR on back.</p>
-                <div class="tech">Pillow + QR code (free)</div>
+            <div class="step-card">
+                <div class="auto-dot">AUTO</div>
+                <div class="step-num">6</div>
+                <h3>Design Postcard</h3>
+                <p>Creates a 4×6" print-ready postcard at 300 DPI. Front: garment with store-specific headline. Back: personalised letter + QR code linking to the video.</p>
+                <div class="step-tech">Pillow + qrcode (free)</div>
             </div>
-            <div class="step">
-                <div class="auto-badge">AUTO</div>
-                <div class="step-number">7</div>
-                <h3>Physical Mailing</h3>
-                <p>Mails the postcard to the store owner by name. They scan the QR, watch their reel, and call you.</p>
-                <div class="tech">Lob API (300 free postcards)</div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- Virtual Try-On Explainer -->
-<section class="tryon-section">
-    <div class="container">
-        <h2>How the Model Wears the Dress</h2>
-        <p class="subtitle">AI virtual try-on technology — no photoshoot needed</p>
-
-        <div class="tryon-flow">
-            <div class="tryon-box">
-                <div class="icon">&#128087;</div>
-                <h4>Store's Garment</h4>
-                <p>Scraped from their website or Google listing</p>
-            </div>
-            <div class="tryon-arrow">+</div>
-            <div class="tryon-box">
-                <div class="icon">&#129489;</div>
-                <h4>Model Photo</h4>
-                <p>Stock model in a neutral pose</p>
-            </div>
-            <div class="tryon-arrow">&rarr;</div>
-            <div class="tryon-box" style="border-color: var(--accent);">
-                <div class="icon">&#10024;</div>
-                <h4>AI Try-On</h4>
-                <p>IDM-VTON maps garment onto model</p>
-            </div>
-            <div class="tryon-arrow">&rarr;</div>
-            <div class="tryon-box" style="border-color: var(--success);">
-                <div class="icon">&#127916;</div>
-                <h4>Cinematic Reel</h4>
-                <p>Stable Video Diffusion adds motion</p>
-            </div>
-        </div>
-
-        <div class="card" style="max-width: 800px; margin: 0 auto;">
-            <h3 style="margin-bottom: 16px;">Technical details</h3>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; font-size: 14px; color: var(--text-muted);">
-                <div>
-                    <strong style="color: var(--text);">Virtual Try-On (IDM-VTON)</strong><br>
-                    Segments the garment from its background, understands shape/texture/draping,
-                    maps it onto the model matching pose and proportions, re-renders with realistic
-                    lighting and shadows.
-                </div>
-                <div>
-                    <strong style="color: var(--text);">Video Generation (SVD)</strong><br>
-                    Takes the try-on result and generates natural movement — the model walking,
-                    fabric flowing, camera angles shifting. Outputs a 4-second cinematic clip
-                    at 9:16 vertical ratio.
-                </div>
-                <div>
-                    <strong style="color: var(--text);">Model options</strong><br>
-                    4 diverse stock model photos included. Swap in your own model photos
-                    for brand-consistent results. Supports male and female models.
-                </div>
-                <div>
-                    <strong style="color: var(--text);">Cost per reel</strong><br>
-                    ~$0.10 for try-on + ~$0.15 for video generation = $0.25/reel on Replicate.
-                    Free trial covers your first ~50-100 reels.
-                </div>
+            <div class="step-card">
+                <div class="auto-dot">AUTO</div>
+                <div class="step-num">7</div>
+                <h3>Physically Mail It</h3>
+                <p>Sends postcard via Lob API. Lob prints, addresses, stamps, and delivers it to the store. Returns a tracking ID. Only fires after video is confirmed generated.</p>
+                <div class="step-tech">Lob API</div>
             </div>
         </div>
     </div>
 </section>
 
-<!-- Sample Outputs -->
-<section class="showcase">
+<!-- ── REAL RESULTS ── -->
+<section style="border-top: 1px solid var(--border);">
     <div class="container">
-        <h2>Real Outputs Generated</h2>
-        <p style="text-align:center; color:var(--text-muted); margin-top:-40px; margin-bottom:40px; font-size:14px;">
-            Real stores discovered via OpenStreetMap · AI-selected garments · Actual videos generated · Physical postcards mailed
-        </p>
-        <div class="showcase-grid">
-            <div class="showcase-card">
-                <div class="preview" style="padding:0; background:#000;">
-                    <video autoplay muted loop playsinline style="width:100%; max-height:220px; object-fit:cover; display:block;"
-                           src="/samples/image_gear_usa/cinematic_reel.mp4"
-                           onerror="this.style.display='none'">
-                    </video>
-                </div>
-                <div class="details">
-                    <h3>Image Gear USA</h3>
-                    <div class="address">Los Angeles, CA · imagegearusa.com</div>
-                    <div class="stats">
-                        <div class="stat">AI pick: <strong>Blue Apron</strong></div>
-                        <div class="stat">Score: <strong>9/10</strong></div>
-                        <div class="stat">Mailed: <strong>✓</strong></div>
-                    </div>
-                    <div style="margin-top:12px; font-size:12px; color:var(--text-muted);">
+        <h2>Real Results Generated</h2>
+        <p class="subtitle">Actual outputs from running the pipeline on real Los Angeles stores. Not mocked, not demo data.</p>
+        <div class="results-grid">
+
+            <div class="result-card">
+                <video controls muted loop playsinline
+                       src="/samples/image_gear_usa/cinematic_reel.mp4">
+                </video>
+                <div class="result-body">
+                    <div class="result-label">Los Angeles, CA · OSM Discovery</div>
+                    <div class="result-name">Image Gear USA</div>
+                    <div class="result-detail">
+                        Website scraped: imagegearusa.com<br>
+                        AI selected: Blue apron · score 9/10<br>
+                        <em>"Bold blue color and interesting silhouette"</em><br>
                         Lob tracking: psc_14497c3c83e24fbf
                     </div>
-                </div>
-            </div>
-            <div class="showcase-card">
-                <div class="preview" style="padding:0; background:#000;">
-                    <video autoplay muted loop playsinline style="width:100%; max-height:220px; object-fit:cover; display:block;"
-                           src="/samples/bridge___burn_dtla/cinematic_reel.mp4"
-                           onerror="this.style.display='none'">
-                    </video>
-                </div>
-                <div class="details">
-                    <h3>Bridge &amp; Burn DTLA</h3>
-                    <div class="address">Los Angeles, CA · bridgeandburn.com</div>
-                    <div class="stats">
-                        <div class="stat">Source: <strong>OSM</strong></div>
-                        <div class="stat">Video: <strong>WAN 2.7</strong></div>
-                        <div class="stat">Score: <strong>40</strong></div>
+                    <div class="result-tags">
+                        <span class="rtag rtag-blue">Video generated</span>
+                        <span class="rtag rtag-green">Postcard mailed ✓</span>
                     </div>
                 </div>
             </div>
-            <div class="showcase-card">
-                <div class="preview" style="padding:12px; background:var(--surface-2);">
-                    <img src="/samples/image_gear_usa/postcard_front.png"
-                         style="width:100%; border-radius:6px; object-fit:contain; max-height:180px;"
-                         alt="Postcard Front" onerror="this.style.display='none'" />
-                </div>
-                <div class="details">
-                    <h3>Postcard Front — Image Gear USA</h3>
-                    <div class="address">300 DPI · 4×6" · print-ready</div>
-                    <div class="stats">
-                        <div class="stat">Size: <strong>4×6"</strong></div>
-                        <div class="stat">DPI: <strong>300</strong></div>
-                        <div class="stat">Format: <strong>PNG</strong></div>
+
+            <div class="result-card">
+                <video controls muted loop playsinline
+                       src="/samples/bridge___burn_dtla/cinematic_reel.mp4">
+                </video>
+                <div class="result-body">
+                    <div class="result-label">Los Angeles, CA · OSM Discovery</div>
+                    <div class="result-name">Bridge &amp; Burn DTLA</div>
+                    <div class="result-detail">
+                        Website scraped: bridgeandburn.com<br>
+                        AI selected best garment from product catalog<br>
+                        Video animated via WaveSpeedAI WAN 2.7
+                    </div>
+                    <div class="result-tags">
+                        <span class="rtag rtag-blue">Video generated</span>
+                        <span class="rtag rtag-amber">Postcard designed</span>
                     </div>
                 </div>
             </div>
-            <div class="showcase-card">
-                <div class="preview" style="padding:12px; background:var(--surface-2);">
-                    <img src="/samples/image_gear_usa/postcard_back.png"
-                         style="width:100%; border-radius:6px; object-fit:contain; max-height:180px;"
-                         alt="Postcard Back" onerror="this.style.display='none'" />
+
+            <div class="result-card">
+                <div class="img-wrap">
+                    <img src="/samples/image_gear_usa/postcard_front.png" alt="Postcard Front" />
                 </div>
-                <div class="details">
-                    <h3>Postcard Back — Image Gear USA</h3>
-                    <div class="address">Personalised letter + QR code to video</div>
-                    <div class="stats">
-                        <div class="stat">QR: <strong>Links to reel</strong></div>
-                        <div class="stat">Copy: <strong>Personalised</strong></div>
-                    </div>
+                <div class="result-body">
+                    <div class="result-label">Postcard — Front Side</div>
+                    <div class="result-name">Image Gear USA · Print-Ready Front</div>
+                    <div class="result-detail">300 DPI · 4×6" · PNG · Garment image + store-specific headline</div>
+                    <div class="result-tags"><span class="rtag rtag-green">Print ready</span></div>
+                </div>
+            </div>
+
+            <div class="result-card">
+                <div class="img-wrap">
+                    <img src="/samples/image_gear_usa/postcard_back.png" alt="Postcard Back" />
+                </div>
+                <div class="result-body">
+                    <div class="result-label">Postcard — Back Side</div>
+                    <div class="result-name">Image Gear USA · Personalised Back</div>
+                    <div class="result-detail">Personalised letter to owner · QR code links to video · Return address printed</div>
+                    <div class="result-tags"><span class="rtag rtag-green">QR to video</span></div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<!-- ── FREE VS PAID PATH ── -->
+<section style="border-top: 1px solid var(--border);">
+    <div class="container">
+        <h2>Free Path vs Paid Path</h2>
+        <p class="subtitle">We built and tested the free path. Here is exactly what changes when you upgrade.</p>
+        <div class="path-grid">
+            <div class="path-card active">
+                <div class="path-badge">✓ Current — What We Built</div>
+                <h3>Free Path</h3>
+                <div class="path-price">~$0.10 <span style="font-size:14px;color:var(--text-muted);font-weight:400">/ store</span></div>
+                <div class="path-rows">
+                    <div class="path-row">OpenStreetMap store discovery — zero cost, no signup</div>
+                    <div class="path-row">Groq Llama 4 Scout Vision — free tier, garment selection</div>
+                    <div class="path-row">WaveSpeedAI WAN 2.7 — $1 free credit (~16 videos)</div>
+                    <div class="path-row">Lob test mode — 300 free test postcards</div>
+                    <div class="path-row">Postcard design with Pillow — completely free</div>
+                    <div class="path-row limit">Segmind try-on — free credits, 406 errors in testing</div>
+                    <div class="path-row limit">Less store data richness vs Google</div>
+                    <div class="path-row limit">Video shows garment alone, not on a model (try-on not stable)</div>
+                </div>
+            </div>
+            <div class="path-card upgrade">
+                <div class="path-badge">↑ Production Upgrade</div>
+                <h3>Paid Path</h3>
+                <div class="path-price">~$0.90 <span style="font-size:14px;color:var(--text-muted);font-weight:400">/ store</span></div>
+                <div class="path-rows">
+                    <div class="path-row">Google Places API — phone, hours, owner name, photos</div>
+                    <div class="path-row">Claude claude-sonnet-5 Vision — best garment reasoning</div>
+                    <div class="path-row">Replicate IDM-VTON — garment on real model, high quality</div>
+                    <div class="path-row">Replicate SVD / Kling — cinematic model reel</div>
+                    <div class="path-row">Lob live mode — real tracked physical mail delivery</div>
+                    <div class="path-row">Full store enrichment — owner name auto-populated</div>
+                    <div class="path-row">Model wearing garment in video — highest conversion</div>
                 </div>
             </div>
         </div>
     </div>
 </section>
 
-<!-- Pricing -->
-<section class="pricing" id="pricing">
+<!-- ── WHAT YOU GET IF YOU BUY THIS ── -->
+<section id="get-this" style="border-top: 1px solid var(--border);">
     <div class="container">
-        <h2>Pricing</h2>
-        <div class="pricing-grid">
-            <div class="price-card">
-                <h3>Starter</h3>
-                <div class="price">$0<span>/mo</span></div>
-                <div class="desc">Try it yourself — all free tiers</div>
-                <ul>
-                    <li>1 city at a time</li>
-                    <li>10 stores per run</li>
-                    <li>Free API tiers only</li>
-                    <li>CLI access</li>
-                    <li>Sample postcards (test mode)</li>
-                </ul>
-                <a href="/dashboard" class="btn btn-outline" style="width: 100%; justify-content: center;">Get Started Free</a>
+        <h2>If You Get This Workflow</h2>
+        <p class="subtitle">What you receive, how to use it, what you can earn from it.</p>
+
+        <div class="buyer-grid">
+            <div class="buyer-card">
+                <div class="buyer-icon">📦</div>
+                <h3>What You Get</h3>
+                <p>Full Python source code for all 7 pipeline steps. Flask web dashboard. Database schema. Ready to run with your own API keys. No black boxes — every line is readable and modifiable.</p>
             </div>
-            <div class="price-card featured">
-                <h3>Agency</h3>
-                <div class="price">$497<span>/mo</span></div>
-                <div class="desc">Done-for-you, per city</div>
-                <ul>
-                    <li>Unlimited stores per city</li>
-                    <li>Real postcards mailed</li>
-                    <li>Email follow-up sequences</li>
-                    <li>Dashboard + analytics</li>
-                    <li>QR scan tracking</li>
-                    <li>CRM integration</li>
-                </ul>
-                <a href="#" class="btn btn-primary" style="width: 100%; justify-content: center;">Book a Call</a>
+            <div class="buyer-card">
+                <div class="buyer-icon">⚡</div>
+                <h3>Setup Time</h3>
+                <p>15–30 minutes. Install Python, run pip install, add 4 API keys to a .env file (all free to get), run one command. No servers, no cloud setup needed to start.</p>
             </div>
-            <div class="price-card">
-                <h3>White Label</h3>
-                <div class="price">$3,997<span> once</span></div>
-                <div class="desc">Your brand, your clients</div>
-                <ul>
-                    <li>Full source code</li>
-                    <li>Custom branding</li>
-                    <li>Deploy on your infra</li>
-                    <li>Training session included</li>
-                    <li>30 days support</li>
-                </ul>
-                <a href="#" class="btn btn-outline" style="width: 100%; justify-content: center;">Contact Us</a>
+            <div class="buyer-card">
+                <div class="buyer-icon">🎯</div>
+                <h3>Who Is This For</h3>
+                <p>Content agencies targeting offline stores. Social media managers looking for a warm outreach hook. Freelancers who want an automated lead generation tool that stands out from cold emails.</p>
+            </div>
+            <div class="buyer-card">
+                <div class="buyer-icon">🔧</div>
+                <h3>What You Can Customise</h3>
+                <p>Postcard design (fonts, layout, brand colors). Model photos for try-on. Target city and store category. Email follow-up copy. Dashboard branding. QR landing page design.</p>
+            </div>
+            <div class="buyer-card">
+                <div class="buyer-icon">📈</div>
+                <h3>How to Scale It</h3>
+                <p>Run against multiple cities. Increase --limit to process 50+ stores per run. Set up a cron job to run weekly. Add email follow-up for stores that scan the QR. Connect CRM webhook to HubSpot or Pipedrive.</p>
+            </div>
+            <div class="buyer-card">
+                <div class="buyer-icon">🛡️</div>
+                <h3>What You Own</h3>
+                <p>Everything. The code is yours. You host it, you run it, you white-label it. There is no subscription, no platform lock-in. Deploy it as a service to your clients under your brand.</p>
             </div>
         </div>
+
+        <!-- HOW TO RUN IT -->
+        <h3 style="margin-bottom: 12px; font-size: 18px;">How You Run It</h3>
+        <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 8px;">Three commands to get started:</p>
+        <div class="cmd-block">
+<span class="cmd-comment"># 1. Install dependencies</span>
+pip install -r requirements.txt
+
+<span class="cmd-comment"># 2. Add your API keys to .env (4 free keys, takes 10 minutes)</span>
+WAVESPEED_API_KEY=your_key
+GROQ_API_KEY=your_key
+LOB_API_KEY=test_your_key
+SEGMIND_API_KEY=your_key
+
+<span class="cmd-comment"># 3. Run on any US city</span>
+python -m pipeline.run --city "New York" --source osm --limit 10 --render-method wavespeed
+
+<span class="cmd-comment"># Optional: skip specific stores you've already contacted</span>
+python -m pipeline.run --city "Chicago" --source osm --limit 5 --exclude "H&M" "Zara"
+        </div>
+
+        <!-- INCOME TABLE -->
+        <h3 style="margin-bottom: 16px; margin-top: 40px; font-size: 18px;">What You Can Charge</h3>
+        <div class="income-row" style="margin-bottom: 32px;">
+            <div class="income-card">
+                <div class="income-n">$150–300</div>
+                <div class="income-l">Per store (one-time outreach package)</div>
+            </div>
+            <div class="income-card">
+                <div class="income-n">$997/mo</div>
+                <div class="income-l">Retainer per city (ongoing outreach)</div>
+            </div>
+            <div class="income-card">
+                <div class="income-n">$3–5k</div>
+                <div class="income-l">White-label setup for another agency</div>
+            </div>
+            <div class="income-card">
+                <div class="income-n">~$0.90</div>
+                <div class="income-l">Your cost per store (paid path)</div>
+            </div>
+        </div>
+
+        <!-- USE CASES TABLE -->
+        <h3 style="margin-bottom: 16px; font-size: 18px;">Use Cases</h3>
+        <table class="use-table">
+            <thead>
+                <tr><th>Who you are</th><th>How you use it</th><th>What the store gets</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Content agency</td>
+                    <td>Run weekly against new cities. Each store gets a reel + postcard. You offer to produce more content for them as a paid client.</td>
+                    <td>A free cinematic reel of their product. A physical postcard showing what you made. A reason to call you.</td>
+                </tr>
+                <tr>
+                    <td>Social media manager</td>
+                    <td>Run against boutiques in your city. Use the reel as a cold outreach sample — "I made this for you, want more?"</td>
+                    <td>One free piece of high-quality video content. A tangible demonstration of your work.</td>
+                </tr>
+                <tr>
+                    <td>Freelance video editor</td>
+                    <td>Use the pipeline to source leads automatically. Close them with the video as proof of concept, then upsell custom reels at $300–500 each.</td>
+                    <td>A personalised video of their exact product. Not a generic pitch — something specific to them.</td>
+                </tr>
+                <tr>
+                    <td>Marketing consultant</td>
+                    <td>Resell outreach-as-a-service. Charge per store or per city. Use the dashboard to show clients how many stores were contacted and which ones viewed the QR.</td>
+                    <td>Physical proof of outreach: a real postcard delivered to their door.</td>
+                </tr>
+                <tr>
+                    <td>Agency owner</td>
+                    <td>White-label the entire system. Rebrand dashboard and postcards. Sell as your own proprietary outreach tool to other agencies.</td>
+                    <td>N/A — you sell the tool itself, not the outreach service.</td>
+                </tr>
+            </tbody>
+        </table>
     </div>
 </section>
 
-<!-- CTA -->
-<section class="cta">
+<!-- ── FAILED COMBINATIONS ── -->
+<section style="border-top: 1px solid var(--border);">
     <div class="container">
-        <h2>Ready to land your first client?</h2>
-        <p>Run the agent. Let the postcard do the selling.</p>
-        <a href="/dashboard" class="btn btn-primary">Launch the Dashboard</a>
+        <h2>What We Tried That Didn't Work</h2>
+        <p class="subtitle">Fifteen real errors hit during development. Every one diagnosed and resolved or routed around.</p>
+        <table class="fail-table">
+            <thead>
+                <tr><th>What failed</th><th>Root cause</th><th>How it was fixed</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>HuggingFace Inference API</td>
+                    <td>api-inference.huggingface.co route-blocked by Indian ISP. DNS change to 8.8.8.8 had no effect — not a DNS issue.</td>
+                    <td>Switched to WaveSpeedAI (globally routable)</td>
+                </tr>
+                <tr>
+                    <td>fal.ai try-on + video</td>
+                    <td>storage.fal.run and fal.run DNS-blocked in India. VPN gave 403 (VPN IP blacklisted by fal.ai).</td>
+                    <td>Abandoned. WaveSpeedAI used instead.</td>
+                </tr>
+                <tr>
+                    <td>Replicate IDM-VTON + SVD</td>
+                    <td>Free trial credits exhausted. 402 on every call.</td>
+                    <td>Segmind + WaveSpeedAI as free alternative</td>
+                </tr>
+                <tr>
+                    <td>Segmind IDM-VTON 406</td>
+                    <td>Base64 of 800px images was ~2MB — server rejected payload size.</td>
+                    <td>Resize to 768px with Pillow before encoding (~200KB). Still investigating.</td>
+                </tr>
+                <tr>
+                    <td>WaveSpeedAI — "480p"</td>
+                    <td>API only accepts "720p" or "1080p". Clear 400 error message.</td>
+                    <td>Changed resolution to "720p". Fixed immediately.</td>
+                </tr>
+                <tr>
+                    <td>WaveSpeedAI — connection aborted</td>
+                    <td>Sending raw PNG as ~2MB base64 body caused server to close connection mid-upload.</td>
+                    <td>Upload to tmpfiles.org first, pass HTTPS URL to WaveSpeed.</td>
+                </tr>
+                <tr>
+                    <td>WaveSpeedAI — HTTP image URL</td>
+                    <td>Garment URL was http:// — WaveSpeed requires HTTPS.</td>
+                    <td>Download and re-upload to tmpfiles.org to get HTTPS URL.</td>
+                </tr>
+                <tr>
+                    <td>Lob — size "6x4"</td>
+                    <td>Lob only accepts "4x6". 422 error.</td>
+                    <td>Fixed string to "4x6".</td>
+                </tr>
+                <tr>
+                    <td>Lob — missing use_type</td>
+                    <td>Required field not in payload. 422 "mail_use_type_can_not_be_null".</td>
+                    <td>Added use_type: "marketing" to request body.</td>
+                </tr>
+                <tr>
+                    <td>Lob — wrong address key</td>
+                    <td>Code read payload["to"]["city"] but key was "address_city". Sent empty city.</td>
+                    <td>Fixed to read from address_parts directly.</td>
+                </tr>
+                <tr>
+                    <td>OSM — 0 qualified stores</td>
+                    <td>All OSM stores have rating=0. Threshold was 50. Nothing passed.</td>
+                    <td>Lower threshold to 15 when no stores have ratings.</td>
+                </tr>
+                <tr>
+                    <td>Groq — deprecated model</td>
+                    <td>llama-3.2-90b-vision-preview removed by Groq with no warning.</td>
+                    <td>Switched to llama-4-scout-17b-16e-instruct.</td>
+                </tr>
+                <tr>
+                    <td>Overpass API 504</td>
+                    <td>Main OSM server overloaded. Timeout on every call.</td>
+                    <td>Added 2 mirror URLs with automatic fallback retry loop.</td>
+                </tr>
+                <tr>
+                    <td>Mailing without video</td>
+                    <td>Pipeline mailed postcards even when video failed. QR pointed to fake URL.</td>
+                    <td>Gates Steps 6+7 on video being confirmed generated.</td>
+                </tr>
+                <tr>
+                    <td>OSM address parsing</td>
+                    <td>OSM returns "106 East 17th St Los Angeles CA 90015" (no commas). Parser split wrong.</td>
+                    <td>Added second parser branch for space-only format with street type detection.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<!-- ── CTA ── -->
+<section style="border-top: 1px solid var(--border); text-align: center;">
+    <div class="container">
+        <h2>Ready to run it?</h2>
+        <p class="subtitle">One command. A city name. The agent handles the rest.</p>
+        <div style="display: flex; gap: 14px; justify-content: center; flex-wrap: wrap;">
+            <a href="/dashboard" class="btn btn-primary">Open Dashboard</a>
+            <a href="#how-it-works" class="btn btn-outline">See the Pipeline</a>
+        </div>
     </div>
 </section>
 

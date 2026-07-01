@@ -144,6 +144,12 @@ def serve_static_reel(filename: str):
     return send_from_directory(REEL_DIR, filename)
 
 
+@app.route("/samples/<path:filename>")
+def serve_sample_file(filename: str):
+    """Serve any file from the sample_output directory (used by portfolio page)."""
+    return send_from_directory(REEL_DIR, filename)
+
+
 def _run_campaign_async(campaign_id: int, city: str, radius: int, limit: int):
     """Run the pipeline in a background thread (triggered from dashboard)."""
     try:
