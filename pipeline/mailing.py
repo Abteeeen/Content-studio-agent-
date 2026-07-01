@@ -156,24 +156,56 @@ def _mail_via_stannp(store: Store, postcard: PostcardOutput) -> str:
 
 
 def _parse_address(address: str) -> dict[str, str]:
-    """Best-effort parse of a Google Maps formatted address into components."""
-    parts = [p.strip() for p in address.split(",")]
-    result: dict[str, str] = {"line1": parts[0] if parts else address}
+    """Parse address into components. Handles both comma-separated and space-only formats.
 
-    if len(parts) >= 3:
-        result["city"] = parts[-3] if len(parts) >= 3 else ""
-        state_zip = parts[-2] if len(parts) >= 2 else ""
-        state_zip_parts = state_zip.strip().split()
-        if state_zip_parts:
-            result["state"] = state_zip_parts[0]
-        if len(state_zip_parts) >= 2:
-            result["zip"] = state_zip_parts[-1]
-    elif len(parts) == 2:
-        result["city"] = parts[0]
-        state_zip_parts = parts[1].strip().split()
-        if state_zip_parts:
-            result["state"] = state_zip_parts[0]
-        if len(state_zip_parts) >= 2:
-            result["zip"] = state_zip_parts[-1]
+    Comma format (Google): "123 Main St, Los Angeles, CA 90015, USA"
+    Space format (OSM):    "123 Main St Los Angeles CA 90015"
+    """
+    import re
+
+    # Try comma-separated first
+    if "," in address:
+        parts = [p.strip() for p in address.split(",")]
+        result: dict[str, str] = {"line1": parts[0]}
+        if len(parts) >= 3:
+            result["city"] = parts[-3].strip()
+            state_zip = parts[-2].strip().split()
+            if state_zip:
+                result["state"] = state_zip[0]
+            if len(state_zip) >= 2:
+                result["zip"] = state_zip[-1]
+        elif len(parts) == 2:
+            state_zip = parts[1].strip().split()
+            if state_zip:
+                result["state"] = state_zip[0]
+            if len(state_zip) >= 2:
+                result["zip"] = state_zip[-1]
+        return result
+
+    # Space-only format: last token=zip, second-last=state, rest heuristically split
+    # e.g. "106 East 17th Street Los Angeles CA 90015"
+    tokens = address.split()
+    result = {}
+
+    # ZIP is last token if it looks numeric
+    if tokens and re.match(r"^\d{5}(-\d{4})?$", tokens[-1]):
+        result["zip"] = tokens.pop()
+
+    # State is last token if it looks like a 2-letter state code
+    if tokens and re.match(r"^[A-Z]{2}$", tokens[-1]):
+        result["state"] = tokens.pop()
+
+    # Find where street number ends and city begins by looking for known city keywords
+    # Heuristic: street address is usually first 3-5 tokens (number + street name + type)
+    street_types = {"street", "st", "avenue", "ave", "blvd", "boulevard", "road", "rd",
+                    "drive", "dr", "lane", "ln", "way", "court", "ct", "place", "pl"}
+    split_idx = min(4, len(tokens))
+    for i, token in enumerate(tokens):
+        if token.lower().rstrip(".") in street_types and i >= 2:
+            split_idx = i + 1
+            break
+
+    result["line1"] = " ".join(tokens[:split_idx])
+    result["city"] = " ".join(tokens[split_idx:]) if split_idx < len(tokens) else ""
 
     return result
