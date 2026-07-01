@@ -1,8 +1,9 @@
 """Step 5: Render the garment on a model in a cinematic 9:16 reel.
 
-Two backends:
-  --render-method replicate    IDM-VTON + Stable Video Diffusion (needs Replicate credits)
-  --render-method free         Hugging Face Inference API (100% free, slower)
+Backends:
+  --render-method replicate    IDM-VTON + Stable Video Diffusion (needs Replicate credits ~$0.05/run)
+  --render-method fal          fal.ai IDM-VTON (free $1 signup credit, ~20 try-ons)
+  --render-method free         Hugging Face Inference API (truly free but unreliable)
 """
 
 from __future__ import annotations
@@ -13,7 +14,7 @@ import time
 
 import requests
 
-from pipeline.config import OUTPUT_DIR, REPLICATE_API_TOKEN
+from pipeline.config import OUTPUT_DIR, REPLICATE_API_TOKEN, FAL_API_KEY
 from pipeline.models import Garment, ReelOutput, Store, StoreStatus
 
 logger = logging.getLogger(__name__)
@@ -26,13 +27,16 @@ MODEL_PHOTOS = [
 ]
 
 HF_TRYON_API = "https://api-inference.huggingface.co/models/yisol/IDM-VTON"
-HF_VIDEO_API = "https://api-inference.huggingface.co/models/stabilityai/stable-video-diffusion-img2vid-xt"
+FAL_TRYON_URL = "https://fal.run/fal-ai/idm-vton"
+FAL_VIDEO_URL = "https://fal.run/fal-ai/stable-video"
 
 
 def render_reel(store: Store, garment: Garment, method: str = "replicate") -> ReelOutput:
     """Render a cinematic reel. Returns ReelOutput with video path and URL."""
     if method == "replicate":
         return _render_replicate(store, garment)
+    elif method == "fal":
+        return _render_fal(store, garment)
     elif method == "free":
         return _render_free(store, garment)
     raise ValueError(f"Unknown rendering method: {method}")
@@ -99,6 +103,98 @@ def _render_free(store: Store, garment: Garment) -> ReelOutput:
 def _bytes_to_base64(data: bytes) -> str:
     import base64
     return base64.b64encode(data).decode("utf-8")
+
+
+# ─── fal.ai rendering (free $1 signup credit) ────────────────────────────────
+
+def _render_fal(store: Store, garment: Garment) -> ReelOutput:
+    """Virtual try-on + video via fal.ai. Free $1 credit on signup (~20 try-ons).
+
+    Sign up: fal.ai → Dashboard → API Keys → copy key
+    Add to .env: FAL_API_KEY=your_key_here
+    """
+    if not FAL_API_KEY:
+        logger.warning("FAL_API_KEY not set — falling back to garment image for %s", store.name)
+        store.status = StoreStatus.REEL_RENDERED
+        return ReelOutput(thumbnail_path=garment.image_path)
+
+    store_dir = os.path.join(OUTPUT_DIR, _slugify(store.name))
+    os.makedirs(store_dir, exist_ok=True)
+    headers = {"Authorization": f"Key {FAL_API_KEY}", "Content-Type": "application/json"}
+
+    tryon_path = garment.image_path
+    video_path = ""
+    video_url = ""
+
+    # Step 1: Virtual try-on via fal.ai IDM-VTON
+    logger.info("Running fal.ai virtual try-on for %s...", store.name)
+    try:
+        with open(garment.image_path, "rb") as f:
+            garment_b64 = _bytes_to_base64(f.read())
+
+        model_resp = requests.get(MODEL_PHOTOS[0], timeout=15)
+        model_b64 = _bytes_to_base64(model_resp.content)
+
+        resp = requests.post(
+            FAL_TRYON_URL,
+            headers=headers,
+            json={
+                "human_image_url": f"data:image/jpeg;base64,{model_b64}",
+                "garment_image_url": f"data:image/jpeg;base64,{garment_b64}",
+                "garment_description": garment.description or "Fashion garment",
+                "category": garment.category or "upper_body",
+            },
+            timeout=120,
+        )
+        resp.raise_for_status()
+        result = resp.json()
+
+        tryon_url = result.get("image", {}).get("url", "")
+        if tryon_url:
+            tryon_path = os.path.join(store_dir, "tryon_result.png")
+            _download(tryon_url, tryon_path)
+            logger.info("fal.ai try-on complete: %s", tryon_path)
+        else:
+            logger.warning("fal.ai try-on returned no image URL — using garment image")
+
+    except Exception as e:
+        logger.error("fal.ai try-on failed for %s: %s — using garment image", store.name, e)
+
+    # Step 2: Animate to video via fal.ai stable-video
+    logger.info("Generating video reel via fal.ai for %s...", store.name)
+    try:
+        with open(tryon_path, "rb") as f:
+            img_b64 = _bytes_to_base64(f.read())
+
+        resp = requests.post(
+            FAL_VIDEO_URL,
+            headers=headers,
+            json={
+                "image_url": f"data:image/png;base64,{img_b64}",
+                "motion_bucket_id": 127,
+                "fps": 6,
+            },
+            timeout=180,
+        )
+        resp.raise_for_status()
+        result = resp.json()
+
+        video_url = result.get("video", {}).get("url", "")
+        if video_url:
+            video_path = os.path.join(store_dir, "cinematic_reel.mp4")
+            _download(video_url, video_path)
+            logger.info("fal.ai reel rendered: %s", video_path)
+
+    except Exception as e:
+        logger.error("fal.ai video failed for %s: %s", store.name, e)
+
+    store.status = StoreStatus.REEL_RENDERED
+    return ReelOutput(
+        video_path=video_path,
+        video_url=video_url,
+        thumbnail_path=tryon_path,
+        duration=4.0,
+    )
 
 
 # ─── Replicate rendering (paid credits) ──────────────────────────────────────
