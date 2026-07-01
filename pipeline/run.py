@@ -194,8 +194,8 @@ def main() -> None:
     parser.add_argument("--source", default="yelp", choices=["yelp", "osm", "google"],
                         help="Store discovery source (yelp=free/recommended, osm=no-signup, google=needs payment)")
     parser.add_argument("--render-method", default="replicate",
-                        choices=["replicate", "fal", "segmind", "free"],
-                        help="Render method: replicate=paid, fal=free credit, segmind=works in India, free=HuggingFace")
+                        choices=["replicate", "fal", "segmind", "free", "wavespeed"],
+                        help="Render method: wavespeed=free $1 credit globally, replicate=paid, fal=free credit, segmind=India, free=HuggingFace")
     parser.add_argument("--mail-service", default="lob", choices=["lob", "stannp"])
     parser.add_argument("--log-level", default="INFO")
 
