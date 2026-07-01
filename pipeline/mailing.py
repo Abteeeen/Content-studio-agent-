@@ -104,6 +104,7 @@ def _mail_via_lob(store: Store, postcard: PostcardOutput) -> str:
                 "from[address_zip]": "90001",
                 "from[address_country]": "US",
                 "size": "4x6",
+                "use_type": "marketing",
             },
             timeout=30,
         )

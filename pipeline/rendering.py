@@ -129,6 +129,36 @@ def _bytes_to_base64(data: bytes) -> str:
     return base64.b64encode(data).decode("utf-8")
 
 
+def _resize_image_b64(image_path: str, max_px: int = 768) -> tuple[str, str]:
+    """Resize image to max_px on longest side, return (data_uri, mime)."""
+    from PIL import Image
+    import io, base64
+    with Image.open(image_path) as img:
+        img = img.convert("RGB")
+        w, h = img.size
+        if max(w, h) > max_px:
+            scale = max_px / max(w, h)
+            img = img.resize((int(w * scale), int(h * scale)), Image.LANCZOS)
+        buf = io.BytesIO()
+        img.save(buf, format="JPEG", quality=85)
+        b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
+    return f"data:image/jpeg;base64,{b64}", "image/jpeg"
+
+
+def _upload_tmpfiles(file_path: str) -> str:
+    """Upload a local image to tmpfiles.org and return a direct-download URL."""
+    with open(file_path, "rb") as f:
+        resp = requests.post(
+            "https://tmpfiles.org/api/v1/upload",
+            files={"file": (os.path.basename(file_path), f, "image/jpeg")},
+            timeout=30,
+        )
+    resp.raise_for_status()
+    url = resp.json().get("data", {}).get("url", "")
+    # Convert viewer URL to direct-download URL
+    return url.replace("tmpfiles.org/", "tmpfiles.org/dl/", 1)
+
+
 # ─── fal.ai rendering (free $1 signup credit) ────────────────────────────────
 
 def _render_fal(store: Store, garment: Garment) -> ReelOutput:
@@ -257,11 +287,17 @@ def _render_segmind(store: Store, garment: Garment) -> ReelOutput:
     # Step 1: Virtual try-on
     logger.info("Running Segmind virtual try-on for %s...", store.name)
     try:
-        with open(garment.image_path, "rb") as f:
-            garment_b64 = _bytes_to_base64(f.read())
+        garment_b64, _ = _resize_image_b64(garment.image_path, max_px=768)
+        garment_b64 = garment_b64.split(",", 1)[1]  # strip data URI prefix
         model_resp = requests.get(MODEL_PHOTOS[0], timeout=15)
         model_resp.raise_for_status()
-        model_b64 = _bytes_to_base64(model_resp.content)
+        import tempfile
+        with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
+            tmp.write(model_resp.content)
+            tmp_model_path = tmp.name
+        model_b64, _ = _resize_image_b64(tmp_model_path, max_px=768)
+        model_b64 = model_b64.split(",", 1)[1]
+        os.unlink(tmp_model_path)
 
         resp = requests.post(
             SEGMIND_TRYON_URL,
@@ -411,11 +447,17 @@ def _render_wavespeed(store: Store, garment: Garment) -> ReelOutput:
     if SEGMIND_API_KEY:
         logger.info("Running Segmind virtual try-on for %s (wavespeed pipeline)...", store.name)
         try:
-            with open(garment.image_path, "rb") as f:
-                garment_b64 = _bytes_to_base64(f.read())
+            garment_b64, _ = _resize_image_b64(garment.image_path, max_px=768)
+            garment_b64 = garment_b64.split(",", 1)[1]
             model_resp = requests.get(MODEL_PHOTOS[0], timeout=15)
             model_resp.raise_for_status()
-            model_b64 = _bytes_to_base64(model_resp.content)
+            import tempfile
+            with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
+                tmp.write(model_resp.content)
+                tmp_model_path = tmp.name
+            model_b64, _ = _resize_image_b64(tmp_model_path, max_px=768)
+            model_b64 = model_b64.split(",", 1)[1]
+            os.unlink(tmp_model_path)
 
             seg_headers = {"x-api-key": SEGMIND_API_KEY, "Content-Type": "application/json"}
             resp = requests.post(
@@ -456,32 +498,46 @@ def _render_wavespeed(store: Store, garment: Garment) -> ReelOutput:
     else:
         logger.info("SEGMIND_API_KEY not set — using garment image directly for WaveSpeed video")
 
-    # Step 2: Convert try-on image to base64 for WaveSpeedAI
+    # Step 2: Submit image to WaveSpeedAI WAN 2.7
     logger.info("Generating video via WaveSpeedAI WAN 2.7 for %s...", store.name)
     try:
-        with open(tryon_path, "rb") as f:
-            image_b64 = _bytes_to_base64(f.read())
-
-        ext = os.path.splitext(tryon_path)[1].lower()
-        mime = "image/png" if ext == ".png" else "image/jpeg"
-        image_data_uri = f"data:{mime};base64,{image_b64}"
-
         ws_headers = {
             "Authorization": f"Bearer {WAVESPEED_API_KEY}",
             "Content-Type": "application/json",
         }
 
+        # Prefer a public URL so we don't hit payload size limits.
+        # If try-on succeeded the result is local — upload to tmpfiles.org.
+        # If no try-on, use the original garment URL directly.
+        tryon_succeeded = tryon_path != garment.image_path and os.path.exists(tryon_path)
+        image_input = ""
+
+        if tryon_succeeded:
+            logger.info("Uploading try-on result to tmpfiles.org for WaveSpeed...")
+            try:
+                image_input = _upload_tmpfiles(tryon_path)
+                logger.info("Uploaded: %s", image_input)
+            except Exception as upload_err:
+                logger.warning("tmpfiles upload failed (%s) — falling back to resized base64", upload_err)
+                image_input, _ = _resize_image_b64(tryon_path, max_px=768)
+        elif garment.image_url and garment.image_url.startswith("http"):
+            image_input = garment.image_url
+            logger.info("Using garment URL directly: %s", image_input)
+        else:
+            image_input, _ = _resize_image_b64(tryon_path, max_px=768)
+            logger.info("Using resized base64 of garment image")
+
         submit_resp = requests.post(
             WAVESPEED_VIDEO_URL,
             headers=ws_headers,
             json={
-                "image": image_data_uri,
+                "image": image_input,
                 "prompt": f"cinematic fashion reel, model wearing {garment.description or 'stylish clothing'}, smooth camera movement, professional lighting",
                 "duration": 4,
                 "resolution": "480p",
                 "enable_safety_checker": True,
             },
-            timeout=60,
+            timeout=90,
         )
         submit_resp.raise_for_status()
         submit_data = submit_resp.json()
