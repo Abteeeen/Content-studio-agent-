@@ -226,7 +226,7 @@ def _render_fal(store: Store, garment: Garment) -> ReelOutput:
 # ─── Segmind rendering (Indian startup — works in India, free credits) ───────
 
 SEGMIND_TRYON_URL = "https://api.segmind.com/v1/idm-vton"
-SEGMIND_VIDEO_URL = "https://api.segmind.com/v1/svd-img2vid"
+SEGMIND_VIDEO_URL = "https://api.segmind.com/v1/stable-video-diffusion"
 
 
 def _render_segmind(store: Store, garment: Garment) -> ReelOutput:
@@ -243,7 +243,7 @@ def _render_segmind(store: Store, garment: Garment) -> ReelOutput:
 
     store_dir = os.path.join(OUTPUT_DIR, _slugify(store.name))
     os.makedirs(store_dir, exist_ok=True)
-    headers = {"x-api-key": SEGMIND_API_KEY, "Content-Type": "application/json"}
+    headers = {"x-api-key": SEGMIND_API_KEY, "Content-Type": "application/json", "Accept": "application/json"}
 
     tryon_path = garment.image_path
     video_path = ""
@@ -274,14 +274,23 @@ def _render_segmind(store: Store, garment: Garment) -> ReelOutput:
         )
         resp.raise_for_status()
 
-        if resp.headers.get("content-type", "").startswith("image"):
+        content_type = resp.headers.get("content-type", "")
+        if content_type.startswith("image"):
             tryon_path = os.path.join(store_dir, "tryon_result.png")
             with open(tryon_path, "wb") as f:
                 f.write(resp.content)
             logger.info("Segmind try-on complete: %s", tryon_path)
-        else:
+        elif "json" in content_type:
             result = resp.json()
-            logger.warning("Segmind try-on unexpected response: %s", result)
+            img_url = result.get("image", result.get("output", ""))
+            if img_url and img_url.startswith("http"):
+                tryon_path = os.path.join(store_dir, "tryon_result.png")
+                _download(img_url, tryon_path)
+                logger.info("Segmind try-on complete: %s", tryon_path)
+            else:
+                logger.warning("Segmind try-on response: %s", result)
+        else:
+            logger.warning("Segmind try-on unexpected content-type: %s — body: %s", content_type, resp.text[:200])
 
     except Exception as e:
         logger.error("Segmind try-on failed for %s: %s — using garment image", store.name, e)
@@ -300,17 +309,24 @@ def _render_segmind(store: Store, garment: Garment) -> ReelOutput:
                 "steps": 25,
                 "fps": 6,
                 "motion_bucket_id": 127,
-                "output_format": "mp4",
             },
             timeout=180,
         )
         resp.raise_for_status()
 
-        if resp.headers.get("content-type", "").startswith("video"):
+        content_type = resp.headers.get("content-type", "")
+        if content_type.startswith("video"):
             video_path = os.path.join(store_dir, "cinematic_reel.mp4")
             with open(video_path, "wb") as f:
                 f.write(resp.content)
             logger.info("Segmind reel rendered: %s", video_path)
+        elif "json" in content_type:
+            result = resp.json()
+            vid_url = result.get("video", result.get("output", ""))
+            if vid_url and vid_url.startswith("http"):
+                video_path = os.path.join(store_dir, "cinematic_reel.mp4")
+                _download(vid_url, video_path)
+                logger.info("Segmind reel rendered: %s", video_path)
 
     except Exception as e:
         logger.error("Segmind video failed for %s: %s", store.name, e)
